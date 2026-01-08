@@ -1,0 +1,101 @@
+﻿@model LyaShop.Models.Bouquet
+
+<div class="container mt-4">
+    <h2 class="mb-4 text-primary">🎨 Design Your Bouquet</h2>
+    <hr />
+
+    <div class="row">
+        <div class="col-md-5">
+            <form asp-action="Create" method="post">
+                <div class="card shadow-sm p-4 border-0">
+                    <div class="mb-3">
+                        <label asp-for="Name" class="form-label fw-bold">Bouquet Name</label>
+                        <input asp-for="Name" class="form-control form-control-lg" placeholder="e.g., Summer Dream" required />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label fw-bold">Special Message / Description</label>
+                        <textarea asp-for="Description" class="form-control" rows="2" placeholder="Write something sweet..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Price" class="form-label fw-bold">Total Price (₪)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₪</span>
+                            <input asp-for="Price" class="form-control" type="number" step="0.01" required />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Select Flowers (Hold Ctrl to select multiple)</label>
+                        <select id="flowerSelector" name="selectedFlowers" class="form-select" multiple style="height: 200px;">
+                            @if (ViewBag.Flowers != null)
+                            {
+                                foreach (var flower in (IEnumerable<LyaShop.Models.Flower>)ViewBag.Flowers)
+                                {
+                                    <option value="@flower.Id" data-img="@flower.ImagePath">@flower.Name (₪@flower.Price)</option>
+                                }
+                            }
+                        </select>
+                        <small class="text-muted">Click to add/remove flowers from the visual bouquet.</small>
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-success btn-lg w-100 shadow-sm">Save & Finish Bouquet</button>
+                        <a asp-action="Index" class="btn btn-link w-100 mt-2 text-decoration-none text-muted">Back to Gallery</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-md-7">
+            <div class="card shadow-sm h-100 bg-white overflow-hidden" style="border: 1px solid #eee;">
+                <div class="card-header bg-light fw-bold text-center py-3">Visual Representation</div>
+                <div id="bouquetCanvas" class="card-body d-flex flex-wrap justify-content-center align-items-center gap-3 p-4" style="min-height: 450px; background-image: radial-gradient(#f0f0f0 1px, transparent 1px); background-size: 20px 20px;">
+                    <div id="placeholderText" class="text-center text-muted">
+                        <i class="bi bi-flower1" style="font-size: 4rem; color: #ffcce0;"></i>
+                        <p class="mt-3">Select flowers from the list to start building your bouquet</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#flowerSelector').on('change', function () {
+                const selectedOptions = $(this).find('option:selected');
+                const canvas = $('#bouquetCanvas');
+                const placeholder = $('#placeholderText');
+
+                if (selectedOptions.length > 0) {
+                    placeholder.hide();
+                    canvas.find('img').remove();
+
+                    selectedOptions.each(function () {
+                        const flowerName = $(this).text();
+                        const imageFile = $(this).data('img'); // מושך את השם האמיתי מה-Database
+
+                        // אם אין תמונה, נשתמש בברירת מחדל
+                        const src = imageFile ? '/images/' + imageFile : 'https://via.placeholder.com/120?text=Flower';
+
+                        const img = $('<img>').attr({
+                            'src': src,
+                            'title': flowerName,
+                            'class': 'img-fluid shadow rounded-circle bouquet-item animate__animated animate__zoomIn',
+                            'style': 'width: 140px; height: 140px; object-fit: cover; border: 5px solid white; cursor: pointer;'
+                        });
+
+                        canvas.append(img);
+                    });
+                } else {
+                    canvas.find('img').remove();
+                    placeholder.show();
+                }
+            });
+        });
+    </script>
+}

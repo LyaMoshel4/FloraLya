@@ -1,40 +1,76 @@
-﻿@model LyaFlowerShop.Models.Flower
+﻿@model LyaShop.Models.Flower
 
 <div class="container mt-4">
-    <h2>Add New Flower 🌸</h2>
-    <hr />
-    <div class="row">
-        <div class="col-md-6">
-            <form asp-action="Create">
-                <div class="mb-3">
-                    <label asp-for="Name" class="form-label">Flower Name</label>
-                    <input asp-for="Name" class="form-control" required />
-                </div>
-                <div class="mb-3">
-                    <label asp-for="Description" class="form-label">Description</label>
-                    <textarea asp-for="Description" class="form-control"></textarea>
-                </div>
-                <div class="mb-3">
-                    <label asp-for="Price" class="form-label">Price (₪)</label>
-                    <input asp-for="Price" class="form-control" type="number" step="0.01" />
-                </div>
-                <div class="mb-3">
-                    <label asp-for="StockQnty" class="form-label">Quantity</label>
-                    <input asp-for="StockQnty" class="form-control" type="number" />
-                </div>
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0">Add New Flower 🌸</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <form asp-action="Create" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-                @* שדה התמונה שהיה חסר *@
-                <div class="mb-3">
-                    <label asp-for="ImagePath" class="form-label">Image Filename</label>
-                    <input asp-for="ImagePath" class="form-control" placeholder="e.g., rose.jpg" />
-                    <small class="text-muted">Enter the filename of the image in your wwwroot/images folder.</small>
-                </div>
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label fw-bold">Flower Name</label>
+                            <input asp-for="Name" class="form-control" placeholder="e.g. Red Rose" required />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
 
-                <div class="mt-4">
-                    <button type="submit" class="btn btn-primary">Save Flower</button>
-                    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label fw-bold">Description</label>
+                            <textarea asp-for="Description" class="form-control" rows="3" placeholder="Tell us about this flower..."></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Price" class="form-label fw-bold">Price (₪)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₪</span>
+                                    <input asp-for="Price" class="form-control" type="number" step="0.01" required />
+                                </div>
+                                <span asp-validation-for="Price" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="StockQnty" class="form-label fw-bold">Quantity in Stock</label>
+                                <input asp-for="StockQnty" class="form-control" type="number" required />
+                                <span asp-validation-for="StockQnty" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ImagePath" class="form-label fw-bold">Image Filename</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-image"></i></span>
+                                <input asp-for="ImagePath" class="form-control" placeholder="rose.png" />
+                            </div>
+                            <small class="text-muted">Put the file in <code>wwwroot/images/</code> and type the name here.</small>
+                            <span asp-validation-for="ImagePath" class="text-danger"></span>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-top">
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-check-lg"></i> Save Flower
+                            </button>
+                            <a asp-action="Index" class="btn btn-outline-secondary px-4 ms-2">Cancel</a>
+                        </div>
+                    </form>
                 </div>
-            </form>
+                <div class="col-md-4 d-none d-md-flex align-items-center justify-content-center bg-light rounded">
+                    <div class="text-center text-muted p-3">
+                        <i class="bi bi-flower1" style="font-size: 5rem; color: #dee2e6;"></i>
+                        <p>Preview will appear once saved in the gallery</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

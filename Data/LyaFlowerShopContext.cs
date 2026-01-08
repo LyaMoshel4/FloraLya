@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using LyaFlowerShop.Models;
+using LyaShop.Models;
+using LyaShop.Models;
 
 namespace LyaShop.Data // וודאי שזה ה-Namespace הנכון לפי התמונות שלך
 {

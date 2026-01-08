@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using LyaShop.Data;           // Namespace של ה-DbContext
-using LyaFlowerShop.Models;    // Namespace של המודלים
+using LyaShop.Data;
+using LyaShop.Models;
 
-namespace LyaFlowerShop.Controllers
+namespace LyaShop.Controllers
 {
     public class FlowersController : Controller
     {
@@ -14,18 +14,14 @@ namespace LyaFlowerShop.Controllers
             _context = context;
         }
 
-        // ==========================================
-        // 1. INDEX - תצוגת כל הפרחים
-        // ==========================================
+        // 1. INDEX - תצוגת רשימת הפרחים
         public async Task<IActionResult> Index()
         {
             var flowers = await _context.Flower.ToListAsync();
             return View(flowers);
         }
 
-        // ==========================================
         // 2. CREATE - יצירת פרח חדש
-        // ==========================================
         public IActionResult Create()
         {
             return View();
@@ -44,9 +40,7 @@ namespace LyaFlowerShop.Controllers
             return View(flower);
         }
 
-        // ==========================================
         // 3. EDIT - עריכת פרח קיים
-        // ==========================================
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -80,9 +74,7 @@ namespace LyaFlowerShop.Controllers
             return View(flower);
         }
 
-        // ==========================================
-        // 4. DELETE - מחיקת פרח
-        // ==========================================
+        // 4. DELETE - הצגת דף אישור מחיקה
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null) return NotFound();
@@ -93,6 +85,7 @@ namespace LyaFlowerShop.Controllers
             return View(flower);
         }
 
+        // אישור מחיקה סופי
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
