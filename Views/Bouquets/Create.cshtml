@@ -1,7 +1,11 @@
 ﻿@model LyaShop.Models.Bouquet
 
+@{
+    ViewData["Title"] = "Professional Bouquet Designer";
+}
+
 <div class="container mt-4">
-    <h2 class="mb-4 text-primary">🎨 Design Your Bouquet</h2>
+    <h2 class="mb-4 text-primary">💐 Design Your Luxury Bouquet</h2>
     <hr />
 
     <div class="row">
@@ -10,53 +14,52 @@
                 <div class="card shadow-sm p-4 border-0">
                     <div class="mb-3">
                         <label asp-for="Name" class="form-label fw-bold">Bouquet Name</label>
-                        <input asp-for="Name" class="form-control form-control-lg" placeholder="e.g., Summer Dream" required />
-                        <span asp-validation-for="Name" class="text-danger"></span>
+                        <input asp-for="Name" class="form-control" placeholder="e.g., Red Romance" required />
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="Description" class="form-label fw-bold">Special Message / Description</label>
-                        <textarea asp-for="Description" class="form-control" rows="2" placeholder="Write something sweet..."></textarea>
-                    </div>
-
-                    <div class="mb-3">
-                        <label asp-for="Price" class="form-label fw-bold">Total Price (₪)</label>
-                        <div class="input-group">
-                            <span class="input-group-text">₪</span>
-                            <input asp-for="Price" class="form-control" type="number" step="0.01" required />
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Select Flowers (Hold Ctrl to select multiple)</label>
-                        <select id="flowerSelector" name="selectedFlowers" class="form-select" multiple style="height: 200px;">
+                        <label class="form-label fw-bold">Add Flowers to Bouquet</label>
+                        <div id="flowerControls" class="list-group mb-2">
                             @if (ViewBag.Flowers != null)
                             {
                                 foreach (var flower in (IEnumerable<LyaShop.Models.Flower>)ViewBag.Flowers)
                                 {
-                                    <option value="@flower.Id" data-img="@flower.ImagePath">@flower.Name (₪@flower.Price)</option>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center border-0 bg-light mb-2 rounded">
+                                        <span>@flower.Name</span>
+                                        <div class="input-group input-group-sm" style="width: 120px;">
+                                            <button type="button" class="btn btn-outline-secondary btn-minus" data-id="@flower.Id">-</button>
+                                            <input type="number" name="flower_@flower.Id" class="form-control text-center flower-qty"
+                                                   value="0" min="0" data-id="@flower.Id" data-name="@flower.Name"
+                                                   data-img="@flower.ImagePath" readonly>
+                                            <button type="button" class="btn btn-outline-secondary btn-plus" data-id="@flower.Id">+</button>
+                                        </div>
+                                    </div>
                                 }
                             }
-                        </select>
-                        <small class="text-muted">Click to add/remove flowers from the visual bouquet.</small>
+                        </div>
                     </div>
 
-                    <div class="mt-4">
-                        <button type="submit" class="btn btn-success btn-lg w-100 shadow-sm">Save & Finish Bouquet</button>
-                        <a asp-action="Index" class="btn btn-link w-100 mt-2 text-decoration-none text-muted">Back to Gallery</a>
+                    <div class="mb-3">
+                        <label asp-for="Price" class="form-label fw-bold">Total Price (₪)</label>
+                        <input asp-for="Price" id="totalPrice" class="form-control" type="number" step="0.01" required readonly value="0" />
                     </div>
+
+                    <button type="submit" class="btn btn-success btn-lg w-100 shadow-sm">Order This Bouquet</button>
                 </div>
+                <div id="hiddenFields"></div>
             </form>
         </div>
 
         <div class="col-md-7">
-            <div class="card shadow-sm h-100 bg-white overflow-hidden" style="border: 1px solid #eee;">
-                <div class="card-header bg-light fw-bold text-center py-3">Visual Representation</div>
-                <div id="bouquetCanvas" class="card-body d-flex flex-wrap justify-content-center align-items-center gap-3 p-4" style="min-height: 450px; background-image: radial-gradient(#f0f0f0 1px, transparent 1px); background-size: 20px 20px;">
-                    <div id="placeholderText" class="text-center text-muted">
-                        <i class="bi bi-flower1" style="font-size: 4rem; color: #ffcce0;"></i>
-                        <p class="mt-3">Select flowers from the list to start building your bouquet</p>
+            <div class="card shadow-sm h-100 bg-white" style="border: 1px solid #eee; position: relative; overflow: hidden; min-height: 600px;">
+                <div id="bouquetCanvas" class="card-body p-0" style="position: relative; height: 100%; background: #fcfcfc;">
+
+                    <div id="wrappingBack" class="wrapping" style="display:none; position: absolute; bottom: 150px; left: 50%; transform: translateX(-50%); width: 350px; height: 400px; background: #f8d7da; clip-path: polygon(0% 20%, 50% 0%, 100% 20%, 80% 100%, 20% 100%); opacity: 0.6; z-index: 5;"></div>
+
+                    <div id="placeholderText" class="text-center text-muted" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                        <p>Add flowers to build your bouquet!</p>
                     </div>
+
                 </div>
             </div>
         </div>
@@ -66,36 +69,92 @@
 @section Scripts {
     <script>
         $(document).ready(function () {
-            $('#flowerSelector').on('change', function () {
-                const selectedOptions = $(this).find('option:selected');
-                const canvas = $('#bouquetCanvas');
-                const placeholder = $('#placeholderText');
+            // כפתורי פלוס ומינוס
+            $('.btn-plus').click(function () {
+                var input = $(this).siblings('.flower-qty');
+                input.val(parseInt(input.val()) + 1);
+                updateBouquet();
+            });
 
-                if (selectedOptions.length > 0) {
+            $('.btn-minus').click(function () {
+                var input = $(this).siblings('.flower-qty');
+                if (parseInt(input.val()) > 0) {
+                    input.val(parseInt(input.val()) - 1);
+                    updateBouquet();
+                }
+            });
+
+            function updateBouquet() {
+                var canvas = $('#bouquetCanvas');
+                var placeholder = $('#placeholderText');
+                var wrapping = $('#wrappingBack');
+                var hiddenFields = $('#hiddenFields');
+
+                canvas.find('.flower-instance').remove();
+                canvas.find('.bouquet-base').remove();
+                hiddenFields.empty();
+
+                var allFlowers = [];
+                $('.flower-qty').each(function () {
+                    var qty = parseInt($(this).val());
+                    var id = $(this).data('id');
+                    var name = $(this).data('name').toLowerCase();
+                    var img = $(this).data('img');
+
+                    for (var i = 0; i < qty; i++) {
+                        allFlowers.push({ id: id, name: name, img: img });
+                        // הוספת שדה מוסתר לטופס עבור ה-Controller
+                        hiddenFields.append('<input type="hidden" name="selectedFlowers" value="' + id + '">');
+                    }
+                });
+
+                if (allFlowers.length > 0) {
                     placeholder.hide();
-                    canvas.find('img').remove();
+                    wrapping.show();
 
-                    selectedOptions.each(function () {
-                        const flowerName = $(this).text();
-                        const imageFile = $(this).data('img'); // מושך את השם האמיתי מה-Database
+                    // הוספת סרט וגבעולים בקדמת הזר
+                    var baseHtml = '<div class="bouquet-base" style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 100;">' +
+                        '<div style="width: 40px; height: 180px; background: linear-gradient(90deg, #1e3511, #2d4f1e); clip-path: polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%); margin: 0 auto;"></div>' +
+                        '<div style="position: absolute; top: 0px; left: 50%; transform: translateX(-50%); font-size: 80px; z-index: 110;">🎀</div>' +
+                        '</div>';
+                    canvas.append(baseHtml);
 
-                        // אם אין תמונה, נשתמש בברירת מחדל
-                        const src = imageFile ? '/images/' + imageFile : 'https://via.placeholder.com/120?text=Flower';
+                    var centerX = canvas.width() / 2;
+                    var centerY = canvas.height() - 200;
 
-                        const img = $('<img>').attr({
-                            'src': src,
-                            'title': flowerName,
-                            'class': 'img-fluid shadow rounded-circle bouquet-item animate__animated animate__zoomIn',
-                            'style': 'width: 140px; height: 140px; object-fit: cover; border: 5px solid white; cursor: pointer;'
+                    allFlowers.forEach(function (flower, index) {
+                        var src = "/images/" + flower.img;
+                        if (flower.name.indexOf('rose') !== -1) src = "/images/rose.jpg";
+                        if (flower.name.indexOf('tulip') !== -1) src = "/images/tulip.png";
+
+                        // פיזור רנדומלי בתוך הזר כדי שזה ייראה טבעי
+                        var angle = 230 + (Math.random() * 80); // פריסה של 80 מעלות בחלק העליון
+                        var rad = angle * Math.PI / 180;
+                        var dist = 30 + (Math.random() * 80); // מרחקים שונים מהמרכז
+
+                        var x = centerX + dist * Math.cos(rad) - 75;
+                        var y = centerY + dist * Math.sin(rad) - 100;
+
+                        var style = 'position: absolute; width: 150px; height: 150px; object-fit: contain; ' +
+                            'left: ' + x + 'px; top: ' + y + 'px; ' +
+                            'transform: rotate(' + (angle - 270) + 'deg); ' +
+                            'transform-origin: bottom center; z-index: ' + (10 + index) + '; ' +
+                            'filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));';
+
+                        var img = $('<img src="' + src + '" class="flower-instance" style="' + style + '">');
+
+                        img.on('error', function () {
+                            var c = $(this).attr('src');
+                            $(this).attr('src', c.includes('.jpg') ? c.replace('.jpg', '.png') : c.replace('.png', '.jpg'));
                         });
 
                         canvas.append(img);
                     });
                 } else {
-                    canvas.find('img').remove();
                     placeholder.show();
+                    wrapping.hide();
                 }
-            });
+            }
         });
     </script>
 }
