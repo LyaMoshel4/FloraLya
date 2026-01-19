@@ -17,7 +17,6 @@ namespace LyaShop.Controllers
         // 1. תצוגת כל הזרים שנוצרו (Index)
         public async Task<IActionResult> Index()
         {
-            // כולל את הפרחים שנמצאים בתוך כל זר כדי שנוכל להציג אותם
             var bouquets = await _context.Bouquet
                 .Include(b => b.FlowersInBouquet)
                 .ThenInclude(fb => fb.Flower)
@@ -28,7 +27,6 @@ namespace LyaShop.Controllers
         // 2. פתיחת דף העיצוב (GET: Create)
         public async Task<IActionResult> Create()
         {
-            // שליחת רשימת הפרחים מהמלאי כדי שיופיעו בתיבת הבחירה ב-Canvas
             ViewBag.Flowers = await _context.Flower.ToListAsync();
             return View();
         }
@@ -40,18 +38,16 @@ namespace LyaShop.Controllers
         {
             if (ModelState.IsValid)
             {
-                // שמירת הזר עצמו
                 _context.Add(bouquet);
                 await _context.SaveChangesAsync();
 
-                // שמירת הפרחים שנבחרו לתוך טבלת הקשר (FlowerInBouquet)
                 if (selectedFlowers != null && selectedFlowers.Length > 0)
                 {
                     foreach (var flowerId in selectedFlowers)
                     {
                         var flowerInBouquet = new FlowerInBouquet
                         {
-                            BouquetId = bouquet.Id, // ה-ID שנוצר הרגע
+                            BouquetId = bouquet.Id,
                             FlowerId = flowerId,
                             Quantity = 1
                         };
@@ -63,34 +59,109 @@ namespace LyaShop.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // אם הטופס לא תקין, נשלח שוב את רשימת הפרחים כדי שהדף לא יישבר
             ViewBag.Flowers = await _context.Flower.ToListAsync();
             return View(bouquet);
         }
 
-        // 4. מחיקת זר
-        public async Task<IActionResult> Delete(int? id)
+        // 4. עריכת זר (GET: Edit)
+        public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
 
-            var bouquet = await _context.Bouquet
-                .FirstOrDefaultAsync(m => m.Id == id);
-
+            var bouquet = await _context.Bouquet.FindAsync(id);
             if (bouquet == null) return NotFound();
 
             return View(bouquet);
         }
 
-        [HttpPost, ActionName("Delete")]
+        // 5. שמירת עריכה (POST: Edit)
+        [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Price")] Bouquet bouquet)
+        {
+            if (id != bouquet.Id) return NotFound();
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    _context.Update(bouquet);
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!BouquetExists(bouquet.Id)) return NotFound();
+                    else throw;
+                }
+                return RedirectToAction(nameof(Index));
+            }
+            return View(bouquet);
+        }
+
+        // 6. מחיקה ישירה מהגלריה (POST: Delete)
+        // שיניתי את זה ל-HttpPost כדי שזה יעבוד מהכפתור בגלריה בלי לחפש דף נוסף
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
         {
             var bouquet = await _context.Bouquet.FindAsync(id);
             if (bouquet != null)
             {
                 _context.Bouquet.Remove(bouquet);
+                await _context.SaveChangesAsync();
             }
-            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
+        }
+
+        private bool BouquetExists(int id)
+        {
+            return _context.Bouquet.Any(e => e.Id == id);
+        }
+
+        // פתיחת דף העריכה (GET)
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var bouquet = await _context.Bouquet.FindAsync(id);
+            if (bouquet == null) return NotFound();
+
+            return View(bouquet);
+        }
+
+        // שמירת השינויים (POST)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Price")] Bouquet bouquet)
+        {
+            if (id != bouquet.Id) return NotFound();
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    _context.Update(bouquet);
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!_context.Bouquet.Any(e => e.Id == bouquet.Id)) return NotFound();
+                    else throw;
+                }
+                return RedirectToAction(nameof(Index));
+            }
+            return View(bouquet);
+        }
+        [HttpPost] // וודאי שכתוב HttpPost ולא HttpGet
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var bouquet = await _context.Bouquet.FindAsync(id);
+            if (bouquet != null)
+            {
+                _context.Bouquet.Remove(bouquet);
+                await _context.SaveChangesAsync();
+            }
             return RedirectToAction(nameof(Index));
         }
     }

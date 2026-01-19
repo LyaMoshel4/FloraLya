@@ -25,11 +25,14 @@
                                 foreach (var flower in (IEnumerable<LyaShop.Models.Flower>)ViewBag.Flowers)
                                 {
                                     <div class="list-group-item d-flex justify-content-between align-items-center border-0 bg-light mb-2 rounded">
-                                        <span>@flower.Name</span>
+                                        <span>@flower.Name <small class="text-muted">(₪@flower.Price)</small></span>
                                         <div class="input-group input-group-sm" style="width: 120px;">
                                             <button type="button" class="btn btn-outline-secondary btn-minus" data-id="@flower.Id">-</button>
                                             <input type="number" name="flower_@flower.Id" class="form-control text-center flower-qty"
-                                                   value="0" min="0" data-id="@flower.Id" data-name="@flower.Name"
+                                                   value="0" min="0" 
+                                                   data-id="@flower.Id" 
+                                                   data-name="@flower.Name"
+                                                   data-price="@flower.Price" 
                                                    data-img="@flower.ImagePath" readonly>
                                             <button type="button" class="btn btn-outline-secondary btn-plus" data-id="@flower.Id">+</button>
                                         </div>
@@ -41,7 +44,8 @@
 
                     <div class="mb-3">
                         <label asp-for="Price" class="form-label fw-bold">Total Price (₪)</label>
-                        <input asp-for="Price" id="totalPrice" class="form-control" type="number" step="0.01" required readonly value="0" />
+                        @* שדה המחיר הופך לצהוב ובולט כשהוא מתעדכן *@
+                        <input asp-for="Price" id="totalPrice" class="form-control fw-bold bg-warning" type="number" step="0.01" required readonly value="0" />
                     </div>
 
                     <button type="submit" class="btn btn-success btn-lg w-100 shadow-sm">Order This Bouquet</button>
@@ -53,13 +57,10 @@
         <div class="col-md-7">
             <div class="card shadow-sm h-100 bg-white" style="border: 1px solid #eee; position: relative; overflow: hidden; min-height: 600px;">
                 <div id="bouquetCanvas" class="card-body p-0" style="position: relative; height: 100%; background: #fcfcfc;">
-
                     <div id="wrappingBack" class="wrapping" style="display:none; position: absolute; bottom: 150px; left: 50%; transform: translateX(-50%); width: 350px; height: 400px; background: #f8d7da; clip-path: polygon(0% 20%, 50% 0%, 100% 20%, 80% 100%, 20% 100%); opacity: 0.6; z-index: 5;"></div>
-
                     <div id="placeholderText" class="text-center text-muted" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
                         <p>Add flowers to build your bouquet!</p>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -69,13 +70,14 @@
 @section Scripts {
     <script>
         $(document).ready(function () {
-            // כפתורי פלוס ומינוס
+            // כפתור פלוס
             $('.btn-plus').click(function () {
                 var input = $(this).siblings('.flower-qty');
                 input.val(parseInt(input.val()) + 1);
                 updateBouquet();
             });
 
+            // כפתור מינוס
             $('.btn-minus').click(function () {
                 var input = $(this).siblings('.flower-qty');
                 if (parseInt(input.val()) > 0) {
@@ -89,30 +91,39 @@
                 var placeholder = $('#placeholderText');
                 var wrapping = $('#wrappingBack');
                 var hiddenFields = $('#hiddenFields');
+                var totalPriceDisplay = $('#totalPrice');
 
                 canvas.find('.flower-instance').remove();
                 canvas.find('.bouquet-base').remove();
                 hiddenFields.empty();
 
                 var allFlowers = [];
+                var runningTotal = 0; // משתנה לחישוב המחיר
+
                 $('.flower-qty').each(function () {
                     var qty = parseInt($(this).val());
                     var id = $(this).data('id');
                     var name = $(this).data('name').toLowerCase();
                     var img = $(this).data('img');
+                    var price = parseFloat($(this).data('price')) || 0;
 
-                    for (var i = 0; i < qty; i++) {
-                        allFlowers.push({ id: id, name: name, img: img });
-                        // הוספת שדה מוסתר לטופס עבור ה-Controller
-                        hiddenFields.append('<input type="hidden" name="selectedFlowers" value="' + id + '">');
+                    if (qty > 0) {
+                        runningTotal += (qty * price); // הוספה למחיר הכולל
+                        
+                        for (var i = 0; i < qty; i++) {
+                            allFlowers.push({ id: id, name: name, img: img });
+                            hiddenFields.append('<input type="hidden" name="selectedFlowers" value="' + id + '">');
+                        }
                     }
                 });
+
+                // עדכון תצוגת המחיר הסופי
+                totalPriceDisplay.val(runningTotal.toFixed(2));
 
                 if (allFlowers.length > 0) {
                     placeholder.hide();
                     wrapping.show();
 
-                    // הוספת סרט וגבעולים בקדמת הזר
                     var baseHtml = '<div class="bouquet-base" style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 100;">' +
                         '<div style="width: 40px; height: 180px; background: linear-gradient(90deg, #1e3511, #2d4f1e); clip-path: polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%); margin: 0 auto;"></div>' +
                         '<div style="position: absolute; top: 0px; left: 50%; transform: translateX(-50%); font-size: 80px; z-index: 110;">🎀</div>' +
@@ -127,10 +138,9 @@
                         if (flower.name.indexOf('rose') !== -1) src = "/images/rose.jpg";
                         if (flower.name.indexOf('tulip') !== -1) src = "/images/tulip.png";
 
-                        // פיזור רנדומלי בתוך הזר כדי שזה ייראה טבעי
-                        var angle = 230 + (Math.random() * 80); // פריסה של 80 מעלות בחלק העליון
+                        var angle = 230 + (Math.random() * 80);
                         var rad = angle * Math.PI / 180;
-                        var dist = 30 + (Math.random() * 80); // מרחקים שונים מהמרכז
+                        var dist = 30 + (Math.random() * 80);
 
                         var x = centerX + dist * Math.cos(rad) - 75;
                         var y = centerY + dist * Math.sin(rad) - 100;
@@ -145,7 +155,8 @@
 
                         img.on('error', function () {
                             var c = $(this).attr('src');
-                            $(this).attr('src', c.includes('.jpg') ? c.replace('.jpg', '.png') : c.replace('.png', '.jpg'));
+                            if (c.includes('.jpg')) $(this).attr('src', c.replace('.jpg', '.png'));
+                            else if (c.includes('.png')) $(this).attr('src', c.replace('.png', '.jpg'));
                         });
 
                         canvas.append(img);

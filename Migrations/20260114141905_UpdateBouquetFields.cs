@@ -13,7 +13,7 @@ namespace LyaShop.Migrations
             migrationBuilder.DropForeignKey(
                 name: "FK_Flower_Bouquet_BouquetId",
                 table: "Flower");
-
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
             migrationBuilder.DropIndex(
                 name: "IX_Flower_BouquetId",
                 table: "Flower");

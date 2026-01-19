@@ -1,0 +1,51 @@
+﻿@model IEnumerable<LyaShop.Models.Bouquet>
+
+@{
+    ViewData["Title"] = "Bouquet Gallery";
+}
+
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="text-primary fw-bold">💐 Bouquet Gallery</h1>
+        <a asp-action="Create" class="btn btn-success btn-lg shadow-sm">+ Design New Bouquet</a>
+    </div>
+
+    <div class="row">
+        @foreach (var item in Model)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm border-0" style="border-radius: 15px; overflow: hidden; transition: transform 0.2s;">
+                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px; font-size: 80px;">
+                        💐
+                    </div>
+                    
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h4 class="card-title mb-0 fw-bold">@item.Name</h4>
+                            <span class="badge bg-warning text-dark fs-6">₪@item.Price</span>
+                        </div>
+                        
+                        <p class="card-text text-muted" style="min-height: 50px;">
+                            <strong>Flowers:</strong> 
+                            @if (item.FlowersInBouquet != null && item.FlowersInBouquet.Any())
+                            {
+                                @string.Join(", ", item.FlowersInBouquet.Select(f => f.Flower.Name))
+                            }
+                        </p>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <div class="btn-group w-100">
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-primary">Edit</a>
+                                
+                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Delete this bouquet?');" style="display:inline; width:50%;">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-outline-danger w-100" style="border-top-left-radius:0; border-bottom-left-radius:0;">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
