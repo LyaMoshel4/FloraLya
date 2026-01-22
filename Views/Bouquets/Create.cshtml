@@ -10,11 +10,14 @@
 
     <div class="row">
         <div class="col-md-5">
-            <form asp-action="Create" method="post">
+            <form asp-action="Create" method="post" id="bouquetForm">
+                @* שדה נסתר שישמור את ה-HTML של הזר בשביל הגלריה *@
+                <input type="hidden" asp-for="BouquetDesignHtml" id="designHtmlInput" />
+
                 <div class="card shadow-sm p-4 border-0">
                     <div class="mb-3">
                         <label asp-for="Name" class="form-label fw-bold">Bouquet Name</label>
-                        <input asp-for="Name" class="form-control" placeholder="e.g., Red Romance" required />
+                        <input asp-for="Name" class="form-control" placeholder="e.g., Summer Dream" required />
                     </div>
 
                     <div class="mb-3">
@@ -44,22 +47,23 @@
 
                     <div class="mb-3">
                         <label asp-for="Price" class="form-label fw-bold">Total Price (₪)</label>
-                        @* שדה המחיר הופך לצהוב ובולט כשהוא מתעדכן *@
-                        <input asp-for="Price" id="totalPrice" class="form-control fw-bold bg-warning" type="number" step="0.01" required readonly value="0" />
+                        <input asp-for="Price" id="totalPrice" class="form-control fw-bold bg-warning text-dark" type="number" step="0.01" required readonly value="0" />
                     </div>
 
-                    <button type="submit" class="btn btn-success btn-lg w-100 shadow-sm">Order This Bouquet</button>
+                    <button type="submit" class="btn btn-success btn-lg w-100 shadow-sm fw-bold">Order This Bouquet</button>
                 </div>
+                
+                @* כאן ייכנסו שדות נסתרים של מזהי הפרחים שנבחרו לצורך הקשר בבסיס הנתונים *@
                 <div id="hiddenFields"></div>
             </form>
         </div>
 
         <div class="col-md-7">
             <div class="card shadow-sm h-100 bg-white" style="border: 1px solid #eee; position: relative; overflow: hidden; min-height: 600px;">
+                @* זה ה"קנבס" שבו הזר נבנה ויזואלית *@
                 <div id="bouquetCanvas" class="card-body p-0" style="position: relative; height: 100%; background: #fcfcfc;">
-                    <div id="wrappingBack" class="wrapping" style="display:none; position: absolute; bottom: 150px; left: 50%; transform: translateX(-50%); width: 350px; height: 400px; background: #f8d7da; clip-path: polygon(0% 20%, 50% 0%, 100% 20%, 80% 100%, 20% 100%); opacity: 0.6; z-index: 5;"></div>
                     <div id="placeholderText" class="text-center text-muted" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
-                        <p>Add flowers to build your bouquet!</p>
+                        <p class="fs-4">Select flowers to start designing!</p>
                     </div>
                 </div>
             </div>
@@ -70,14 +74,14 @@
 @section Scripts {
     <script>
         $(document).ready(function () {
-            // כפתור פלוס
+            // הוספת פרח
             $('.btn-plus').click(function () {
                 var input = $(this).siblings('.flower-qty');
                 input.val(parseInt(input.val()) + 1);
                 updateBouquet();
             });
 
-            // כפתור מינוס
+            // הסרת פרח
             $('.btn-minus').click(function () {
                 var input = $(this).siblings('.flower-qty');
                 if (parseInt(input.val()) > 0) {
@@ -86,19 +90,28 @@
                 }
             });
 
+            // לפני שליחת הטופס - צילום מצב של ה-HTML לתוך השדה הנסתר
+            $('#bouquetForm').on('submit', function() {
+                // יוצרים עותק נקי של הקנבס בלי טקסטים מיותרים
+                const canvasClone = $('#bouquetCanvas').clone();
+                canvasClone.find('#placeholderText').remove();
+                
+                // שומרים את ה-HTML של העיצוב לתוך המודל
+                $('#designHtmlInput').val(canvasClone.html());
+            });
+
             function updateBouquet() {
                 var canvas = $('#bouquetCanvas');
                 var placeholder = $('#placeholderText');
-                var wrapping = $('#wrappingBack');
                 var hiddenFields = $('#hiddenFields');
                 var totalPriceDisplay = $('#totalPrice');
 
-                canvas.find('.flower-instance').remove();
-                canvas.find('.bouquet-base').remove();
+                // ניקוי הקנבס והשדות הנסתרים לפני עדכון
+                canvas.find('.flower-instance, .bouquet-base').remove();
                 hiddenFields.empty();
 
                 var allFlowers = [];
-                var runningTotal = 0; // משתנה לחישוב המחיר
+                var runningTotal = 0;
 
                 $('.flower-qty').each(function () {
                     var qty = parseInt($(this).val());
@@ -108,62 +121,53 @@
                     var price = parseFloat($(this).data('price')) || 0;
 
                     if (qty > 0) {
-                        runningTotal += (qty * price); // הוספה למחיר הכולל
-                        
+                        runningTotal += (qty * price);
                         for (var i = 0; i < qty; i++) {
                             allFlowers.push({ id: id, name: name, img: img });
+                            // הוספת ה-ID של הפרח לשליחה ל-Controller
                             hiddenFields.append('<input type="hidden" name="selectedFlowers" value="' + id + '">');
                         }
                     }
                 });
 
-                // עדכון תצוגת המחיר הסופי
+                // עדכון המחיר הסופי
                 totalPriceDisplay.val(runningTotal.toFixed(2));
 
                 if (allFlowers.length > 0) {
                     placeholder.hide();
-                    wrapping.show();
-
-                    var baseHtml = '<div class="bouquet-base" style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 100;">' +
-                        '<div style="width: 40px; height: 180px; background: linear-gradient(90deg, #1e3511, #2d4f1e); clip-path: polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%); margin: 0 auto;"></div>' +
-                        '<div style="position: absolute; top: 0px; left: 50%; transform: translateX(-50%); font-size: 80px; z-index: 110;">🎀</div>' +
-                        '</div>';
+                    
+                    // הוספת בסיס הזר (הגבעולים והסרט)
+                    var baseHtml = `
+                        <div class="bouquet-base" style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 100;">
+                            <div style="width: 40px; height: 180px; background: linear-gradient(90deg, #1e3511, #2d4f1e); margin: 0 auto; clip-path: polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%);"></div>
+                            <div style="position: absolute; top: 0px; left: 50%; transform: translateX(-50%); font-size: 80px; z-index: 110;">🎀</div>
+                        </div>`;
                     canvas.append(baseHtml);
 
-                    var centerX = canvas.width() / 2;
-                    var centerY = canvas.height() - 200;
-
+                    // פיזור הפרחים בצורה רנדומלית יפה
                     allFlowers.forEach(function (flower, index) {
-                        var src = "/images/" + flower.img;
-                        if (flower.name.indexOf('rose') !== -1) src = "/images/rose.jpg";
-                        if (flower.name.indexOf('tulip') !== -1) src = "/images/tulip.png";
-
-                        var angle = 230 + (Math.random() * 80);
+                        var angle = 230 + (Math.random() * 80); // זווית פיזור
                         var rad = angle * Math.PI / 180;
-                        var dist = 30 + (Math.random() * 80);
+                        var dist = 50 + (Math.random() * 120); // מרחק מהמרכז
 
-                        var x = centerX + dist * Math.cos(rad) - 75;
-                        var y = centerY + dist * Math.sin(rad) - 100;
+                        var x = (canvas.width() / 2) + dist * Math.cos(rad) - 75;
+                        var y = (canvas.height() - 250) + dist * Math.sin(rad) - 75;
 
-                        var style = 'position: absolute; width: 150px; height: 150px; object-fit: contain; ' +
-                            'left: ' + x + 'px; top: ' + y + 'px; ' +
-                            'transform: rotate(' + (angle - 270) + 'deg); ' +
-                            'transform-origin: bottom center; z-index: ' + (10 + index) + '; ' +
-                            'filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));';
+                        var style = `
+                            position: absolute; 
+                            width: 150px; 
+                            height: 150px; 
+                            object-fit: contain; 
+                            left: ${x}px; 
+                            top: ${y}px; 
+                            z-index: ${10 + index}; 
+                            transform: rotate(${angle - 270}deg); 
+                            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));`;
 
-                        var img = $('<img src="' + src + '" class="flower-instance" style="' + style + '">');
-
-                        img.on('error', function () {
-                            var c = $(this).attr('src');
-                            if (c.includes('.jpg')) $(this).attr('src', c.replace('.jpg', '.png'));
-                            else if (c.includes('.png')) $(this).attr('src', c.replace('.png', '.jpg'));
-                        });
-
-                        canvas.append(img);
+                        canvas.append(`<img src="/images/${flower.img}" class="flower-instance" style="${style}">`);
                     });
                 } else {
                     placeholder.show();
-                    wrapping.hide();
                 }
             }
         });

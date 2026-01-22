@@ -22,5 +22,8 @@ namespace LyaShop.Models // שונה מ-LyaFlowerShop ל-LyaShop
 
         // הקשר לטבלה המקשרת
         public virtual ICollection<FlowerInBouquet> FlowersInBouquet { get; set; } = new List<FlowerInBouquet>();
+
+        public string? BouquetDesignHtml { get; set; } // שדה שישמור את קוד ה-HTML של העיצוב
+
     }
 }
