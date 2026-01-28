@@ -5,36 +5,45 @@
         @foreach (var item in Model)
         {
             <div class="col-md-4 mb-4">
-                <div class="card h-100 shadow-sm border-0" style="border-radius: 15px; overflow: hidden;">
+                <div class="card h-100 shadow-sm border-0 bouquet-card-final">
                     
-                    @* מסגרת התמונה - הגדלנו את הגובה ל-300px *@
-                    <div class="card-img-top bg-light" style="height: 300px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-                        
+                    <div class="card-img-top bouquet-viewport-final">
                         @if (!string.IsNullOrEmpty(item.BouquetDesignHtml))
                         {
-                            @* שינינו את ה-scale ל-0.6 כדי שיהיה גדול יותר, והוספנו מרכוז *@
-                            <div class="bouquet-preview-container" style="transform: scale(0.65); transform-origin: center; width: 500px; height: 500px; position: absolute; display: flex; align-items: center; justify-content: center;">
-                                @Html.Raw(item.BouquetDesignHtml)
+                            @* קונטיינר מרכזי שנועל את הכל באמצע *@
+                            <div class="bouquet-center-lock">
+                                
+                                @* נייר אחורי - עטיפה רחבה *@
+                                <div class="kraft-paper-back"></div>
+                                
+                                @* הפרחים - מוזזים בכוח למרכז הקופסה *@
+                                <div class="flower-alignment-box">
+                                    <div class="flower-manual-shift">
+                                        @Html.Raw(item.BouquetDesignHtml)
+                                    </div>
+                                </div>
+
+                                @* נייר קדמי - סוגר את ה"סנדוויץ'" *@
+                                <div class="kraft-paper-front"></div>
+
+                                @* פפיון מרכזי *@
+                                <div class="ribbon-center">🎀</div>
+                                
                             </div>
                         }
                         else
                         {
-                            <div class="text-center text-muted" style="opacity: 0.4;">
-                                <p>No design saved</p>
-                                <span style="font-size: 60px;">💐</span>
-                            </div>
+                            <div class="empty-bouquet-icon">💐</div>
                         }
                     </div>
 
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h4 class="card-title mb-0 fw-bold">@item.Name</h4>
-                            <span class="badge bg-warning text-dark">₪@item.Price</span>
-                        </div>
+                    <div class="card-body text-center bg-white border-top">
+                        <h5 class="fw-bold mb-1">@item.Name</h5>
+                        <div class="price-text mb-3">₪@item.Price</div>
                         
-                        <div class="btn-group w-100 mt-3">
-                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-primary btn-sm">Edit</a>
-                            <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Delete this bouquet?');" style="display:contents;">
+                        <div class="btn-group w-100">
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-dark btn-sm">Edit</a>
+                            <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Delete?');" style="display:contents;">
                                 @Html.AntiForgeryToken()
                                 <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
                             </form>
@@ -47,20 +56,93 @@
 </div>
 
 <style>
-    /* תיקונים קריטיים למרכוז האלמנטים בתוך הגלריה */
-    .bouquet-preview-container .bouquet-base {
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        bottom: 50px !important;
+    /* הגדרות כרטיס וחלון תצוגה */
+    .bouquet-card-final { border-radius: 20px; overflow: hidden; transition: 0.3s ease; }
+    
+    .bouquet-viewport-final {
+        height: 380px;
+        background: radial-gradient(circle, #ffffff 0%, #ececec 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
     }
 
-    .bouquet-preview-container img.flower-instance {
-        /* מבטיח שהפרחים יישארו במיקומם היחסי למרכז התיבה */
+    /* המנעול ששומר על הכל במרכז */
+    .bouquet-center-lock {
+        position: relative;
+        width: 300px; /* רוחב קבוע לקומפוזיציה */
+        height: 350px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transform: scale(0.7) translateY(20px);
+    }
+
+    /* נייר קראפט אחורי */
+    .kraft-paper-back {
+        position: absolute;
+        bottom: 0;
+        width: 280px;
+        height: 380px;
+        background: #d2b48c;
+        clip-path: polygon(0% 0%, 100% 0%, 70% 100%, 30% 100%);
+        z-index: 1;
+        box-shadow: inset 0 -20px 40px rgba(0,0,0,0.15);
+    }
+
+    /* נייר קראפט קדמי - סגירת הזר */
+    .kraft-paper-front {
+        position: absolute;
+        bottom: 0;
+        width: 140px;
+        height: 140px;
+        background: #c5a67c;
+        clip-path: polygon(0% 0%, 100% 0%, 80% 100%, 20% 100%);
+        z-index: 3;
+        box-shadow: 0 -10px 20px rgba(0,0,0,0.1);
+    }
+
+    /* תיקון המרכוז של הפרחים */
+    .flower-alignment-box {
+        position: relative;
+        z-index: 2; /* בין שתי שכבות הנייר */
+        width: 100%;
+        height: 100%;
+    }
+
+    .flower-manual-shift {
+        position: absolute;
+        /* ההזזה הקריטית - מחזירה את הפרחים למרכז ה-300px שלנו */
+        left: -125px; 
+        top: -60px;
+    }
+
+    /* ניקוי שאריות מהעיצוב */
+    .flower-manual-shift .bouquet-base, 
+    .flower-manual-shift .bow-style,
+    .flower-manual-shift .luxury-ribbon-bow,
+    .flower-manual-shift .wrapping-paper-bg {
+        display: none !important;
+    }
+
+    .flower-manual-shift img.flower-instance {
+        position: absolute !important;
         max-width: none !important;
+        filter: drop-shadow(0 15px 25px rgba(0,0,0,0.2));
     }
 
-    .card:hover {
-        transform: translateY(-5px);
-        transition: 0.3s;
+    /* הפפיון הסופי */
+    .ribbon-center {
+        position: absolute;
+        bottom: 120px;
+        font-size: 80px;
+        z-index: 4;
+        filter: drop-shadow(0 5px 10px rgba(0,0,0,0.2));
+        pointer-events: none;
     }
+
+    .price-text { color: #b8860b; font-weight: 900; font-size: 1.3rem; }
+    .bouquet-card-final:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important; }
 </style>
