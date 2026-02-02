@@ -1,6 +1,6 @@
- using LyaShop.Data;
+using LyaShop.Data;
 using Microsoft.EntityFrameworkCore;
-
+using Microsoft.AspNetCore.Authentication.Cookies; // הוספתי את זה
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +10,15 @@ builder.Services.AddDbContext<LyaFlowerShopContext>(options =>
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+// --- 1. הוספת שירות האימות (Cookies) ---
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Admin/Login"; // לאן להפנות אם מישהו לא מורשה
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30); // זמן חיבור
+    });
+// ---------------------------------------
 
 var app = builder.Build();
 
@@ -25,7 +34,10 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+// --- 2. הסדר כאן קריטי! קודם בדיקת זהות ואז בדיקת הרשאות ---
+app.UseAuthentication();
 app.UseAuthorization();
+// ---------------------------------------------------------
 
 app.MapControllerRoute(
     name: "default",

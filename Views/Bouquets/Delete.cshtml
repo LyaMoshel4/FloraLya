@@ -1,0 +1,55 @@
+﻿@model LyaShop.Models.Bouquet
+
+@{
+    ViewData["Title"] = "Delete Bouquet";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            
+            <h1 class="text-danger fw-bold mb-3">Delete Bouquet? 🗑️</h1>
+            <h3 class="lead text-muted mb-4">Are you sure? This cannot be undone.</h3>
+
+            <div class="card shadow-lg border-0 mb-4">
+                <div class="card-body p-0 position-relative bg-light overflow-hidden d-flex justify-content-center align-items-center" 
+                     style="height: 400px;">
+                    
+                    <div class="position-absolute" 
+                         style="bottom: 30px; width: 240px; height: 340px; background-color: #d7bfa6; 
+                                clip-path: polygon(0 0, 100% 0, 50% 100%); z-index: 1;">
+                    </div>
+
+                    <div class="position-absolute w-100 h-100 d-flex justify-content-center align-items-center" 
+                         style="z-index: 2; top: -40px;">
+                        <div style="transform: scale(0.7);">
+                             @if (!string.IsNullOrEmpty(Model.BouquetDesignHtml))
+                             {
+                                 @Html.Raw(Model.BouquetDesignHtml)
+                             }
+                        </div>
+                    </div>
+
+                    <div class="position-absolute start-50 translate-middle-x" 
+                         style="bottom: 130px; z-index: 3; font-size: 3.5rem;">
+                        🎀
+                    </div>
+                </div>
+
+                <div class="card-footer bg-white py-4">
+                    <h2 class="fw-bold">@Model.Name</h2>
+                    <h3 class="text-success fw-bold">₪@Model.Price</h3>
+                    
+                    <form asp-action="Delete" class="mt-4">
+                        <input type="hidden" asp-for="Id" />
+                        <div class="d-grid gap-2">
+                            <input type="submit" value="Yes, Delete it!" class="btn btn-danger btn-lg" />
+                            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
