@@ -3,16 +3,24 @@
 @{
     ViewData["Title"] = "Edit Bouquet";
     var flowersList = ViewBag.Flowers as List<LyaShop.Models.Flower>;
+
+    // פונקציית ניקוי הנתיבים (נשארת אותו דבר כי היא עובדת מצוין)
+    string GetCleanUrl(string rawPath)
+    {
+        if (string.IsNullOrEmpty(rawPath)) return "/images/default.png";
+        string fileName = System.IO.Path.GetFileName(rawPath);
+        return "/images/" + fileName;
+    }
 }
 
 <div class="container mt-4">
     <div class="text-center mb-4">
         <h1 class="display-4 text-primary fw-bold">Edit Your Bouquet ✏️</h1>
-        <p class="lead text-muted">Modify existing design, add or remove flowers.</p>
+        <p class="lead text-muted">Add flowers to create a beautiful bunch.</p>
     </div>
 
     <div class="row">
-        @* --- צד שמאל: בחירת פרחים --- *@
+        @* --- צד שמאל: רשימת הפרחים --- *@
         <div class="col-md-3">
             <div class="card shadow-sm mb-3">
                 <div class="card-header bg-warning text-dark fw-bold">
@@ -24,13 +32,15 @@
                         {
                             foreach (var flower in flowersList)
                             {
+                                var finalPath = GetCleanUrl(flower.ImagePath);
+                                
                                 <div class="col-6 text-center">
-                                    @* תיקון: שימוש ב-ImagePath *@
                                     <div class="flower-item border rounded p-2 pointer" 
-                                         onclick="addFlower('@flower.ImagePath', '@flower.Price')">
+                                         onclick="addFlower('@finalPath', '@flower.Price')">
                                         
-                                        @* תיקון: שימוש ב-ImagePath *@
-                                        <img src="@flower.ImagePath" class="img-fluid mb-1" style="height: 60px; object-fit: contain;">
+                                        <img src="@finalPath" class="img-fluid mb-1" 
+                                             style="height: 60px; object-fit: contain;"
+                                             onerror="this.src='https://via.placeholder.com/60?text=Flower'">
                                         
                                         <div style="font-size: 0.8rem;">@flower.Name</div>
                                         <div class="fw-bold text-success">₪@flower.Price</div>
@@ -41,10 +51,15 @@
                     </div>
                 </div>
             </div>
-            <a asp-action="Index" class="btn btn-secondary w-100 mt-2">Back to Gallery</a>
+            
+            <button type="button" class="btn btn-warning w-100 mb-2 fw-bold" onclick="undoLastFlower()">
+                ↩ Undo Last Flower
+            </button>
+
+            <a asp-action="Index" class="btn btn-secondary w-100">Back to Gallery</a>
         </div>
 
-        @* --- צד ימין: משטח העבודה + טופס שמירה --- *@
+        @* --- צד ימין: משטח העבודה --- *@
         <div class="col-md-9">
             <form asp-action="Edit" id="designForm" onsubmit="saveDesign()">
                 <input type="hidden" asp-for="Id" />
@@ -58,12 +73,19 @@
                     <span asp-validation-for="Name" class="text-danger"></span>
                 </div>
 
+                @* --- CANVAS --- *@
                 <div class="card shadow-sm border-0 mb-3 position-relative bg-light" style="height: 500px; overflow: hidden;">
-                    <img src="/images/wrapping_paper.png" class="position-absolute top-50 start-50 translate-middle" 
-                         style="height: 90%; opacity: 0.9; z-index: 1;" alt="Wrapping">
                     
-                    <img src="/images/ribbon_pink.png" class="position-absolute start-50 translate-middle-x" 
-                         style="bottom: 100px; width: 100px; z-index: 20;" alt="Ribbon">
+                    @* רקע וסרט *@
+                    <img src="/images/wrapping_paper.png" 
+                         class="position-absolute top-50 start-50 translate-middle" 
+                         style="height: 90%; opacity: 0.9; z-index: 1;" 
+                         alt="Wrapping">
+                    
+                    <img src="/images/ribbon_pink.png" 
+                         class="position-absolute start-50 translate-middle-x" 
+                         style="bottom: 100px; width: 100px; z-index: 20;" 
+                         alt="Ribbon">
 
                     <div id="bouquetCanvas" class="w-100 h-100 position-relative" style="z-index: 10;">
                         @Html.Raw(Model.BouquetDesignHtml)
@@ -87,106 +109,157 @@
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 
     <script>
-        // המרת המחיר למספר
-        let initialPrice = "@Model.Price";
-        let currentPrice = parseFloat(initialPrice);
+        const flowerDatabase = [
+            @if (flowersList != null)
+            {
+                foreach(var f in flowersList)
+                {
+                    var cleanPath = GetCleanUrl(f.ImagePath);
+                    @:{ path: "@cleanPath", price: @f.Price },
+                }
+            }
+        ];
+
+        let currentPrice = parseFloat("@Model.Price");
         if (isNaN(currentPrice)) currentPrice = 0;
 
-        // 1. פונקציה שרצה כשהדף עולה כדי "להחיות" את הפרחים הקיימים
         document.addEventListener("DOMContentLoaded", function() {
-            // מוצא את כל הפרחים שכבר היו בזר
-            const existingFlowers = document.querySelectorAll('.flower-on-canvas');
-            
-            existingFlowers.forEach(flowerDiv => {
-                // מחפש את כפתור המחיקה שלהם (אם קיים)
-                const closeBtn = flowerDiv.querySelector('.remove-btn');
+            const canvas = document.getElementById("bouquetCanvas");
+            const allFlowers = canvas.children;
+
+            // סידור מחדש של פרחים שכבר קיימים
+            for (let i = 0; i < allFlowers.length; i++) {
+                let flowerEl = allFlowers[i];
+                let imgEl = flowerEl.querySelector("img") || flowerEl; 
                 
-                // מנסה לקרוא את המחיר שהיה שמור בתוך ה-HTML
-                let priceAttr = flowerDiv.getAttribute('data-price');
-                let price = parseFloat(priceAttr);
-                if (isNaN(price)) price = 0;
-                
-                // מחבר מחדש את אירוע המחיקה
-                if(closeBtn) {
-                    closeBtn.onclick = function() {
-                        flowerDiv.remove();
-                        updatePrice(-price);
-                    };
+                // תיקון נתיבים
+                if (imgEl && imgEl.tagName === 'IMG') {
+                    let src = imgEl.getAttribute('src');
+                    if (src) {
+                        let filename = src.split('/').pop().split('\\').pop();
+                        imgEl.src = '/images/' + filename;
+                        // מוסיף הגדרה שהסיבוב יהיה מהגבעול
+                        imgEl.style.transformOrigin = "bottom center";
+                    }
                 }
-            });
+
+                // זיהוי מחיר
+                let detectedPrice = 0;
+                if (imgEl && imgEl.src) {
+                    let currentFilename = imgEl.src.split('/').pop();
+                    let match = flowerDatabase.find(f => f.path.includes(currentFilename));
+                    if (match) detectedPrice = match.price;
+                }
+                flowerEl.setAttribute('data-price', detectedPrice);
+                
+                if (!flowerEl.querySelector('.remove-btn')) {
+                    if (getComputedStyle(flowerEl).position === 'static') flowerEl.style.position = 'absolute';
+                    addDeleteButton(flowerEl);
+                } else {
+                    flowerEl.querySelector('.remove-btn').onclick = function() { removeSpecificFlower(flowerEl); };
+                }
+            }
+            updatePrice(0);
         });
 
-        // 2. הוספת פרח חדש
+        // --- הפונקציה המעודכנת למיקום מדויק בתוך הזר ---
         function addFlower(imgUrl, price) {
             const canvas = document.getElementById("bouquetCanvas");
             const priceVal = parseFloat(price);
 
-            // יצירת אלמנט לפרח החדש
             const div = document.createElement("div");
             div.className = "flower-on-canvas position-absolute";
-            // מיקום רנדומלי
-            div.style.left = (50 + (Math.random() * 20 - 10)) + "%"; 
-            div.style.top = (40 + (Math.random() * 20 - 10)) + "%";
-            div.style.transform = "translate(-50%, -50%)";
+            
+            // --- תיקון המיקום: צמצום טווח הפיזור ---
+            
+            // 1. שמאל/ימין: טווח צר מאוד סביב המרכז (45% עד 55%)
+            // זה מבטיח שהפרחים יישארו בתוך המשולש
+            let randomLeft = 50 + (Math.random() * 14 - 7); 
+            
+            // 2. גובה: אזור ה"פתיחה" של הזר (קצת מעל האמצע)
+            // כדי שייראו יוצאים מהעטיפה
+            let randomTop = 38 + (Math.random() * 10 - 5);
+            
+            // 3. סיבוב: נותן הטיה קלה ימינה או שמאלה
+            let randomRotate = Math.floor(Math.random() * 40) - 20;
+
+            div.style.left = randomLeft + "%"; 
+            div.style.top = randomTop + "%";
+            div.style.transform = `translate(-50%, -50%) rotate(${randomRotate}deg)`;
+            
             div.setAttribute('data-price', priceVal);
 
-            // HTML פנימי
+            // השינוי החשוב: הגדרת נקודת הציר לתחתית התמונה (הגבעול)
             div.innerHTML = `
                 <div class="position-relative">
-                    <img src="${imgUrl}" style="height: 100px; filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.2));">
-                    <button type="button" class="remove-btn btn btn-danger btn-sm rounded-circle position-absolute top-0 start-100 translate-middle p-0" 
-                            style="width: 20px; height: 20px; line-height: 1; font-size: 12px;">X</button>
+                    <img src="${imgUrl}" style="height: 120px; filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.3)); transform-origin: bottom center;">
                 </div>
             `;
 
+            addDeleteButton(div);
             canvas.appendChild(div);
-
-            // הגדרת אירוע מחיקה לפרח החדש
-            div.querySelector(".remove-btn").onclick = function() {
-                div.remove();
-                updatePrice(-priceVal);
-            };
-
             updatePrice(priceVal);
         }
 
-        // 3. עדכון מחיר
+        function addDeleteButton(flowerEl) {
+            if(flowerEl.querySelector('.remove-btn')) return;
+
+            let btn = document.createElement('button');
+            btn.innerHTML = 'X';
+            btn.className = 'remove-btn btn btn-danger btn-sm rounded-circle position-absolute top-0 start-100 translate-middle p-0';
+            btn.style.width = '20px';
+            btn.style.height = '20px';
+            btn.style.lineHeight = '1';
+            btn.style.fontSize = '12px';
+            btn.type = 'button';
+            
+            let target = flowerEl.querySelector('.position-relative') || flowerEl;
+            target.appendChild(btn);
+
+            btn.onclick = function() { removeSpecificFlower(flowerEl); };
+        }
+
+        function removeSpecificFlower(element) {
+            let price = parseFloat(element.getAttribute('data-price'));
+            if (isNaN(price)) price = 0;
+            element.remove();
+            updatePrice(-price);
+        }
+
+        function undoLastFlower() {
+            const canvas = document.getElementById("bouquetCanvas");
+            const flowers = canvas.querySelectorAll(".flower-on-canvas");
+            if (flowers.length > 0) {
+                removeSpecificFlower(flowers[flowers.length - 1]);
+            } else {
+                alert("No flowers to remove!");
+            }
+        }
+
         function updatePrice(amount) {
             currentPrice += amount;
             if (currentPrice < 0) currentPrice = 0;
-            
             document.getElementById("totalPriceDisplay").innerText = currentPrice.toFixed(2);
             document.getElementById("Price").value = currentPrice;
         }
 
-        // 4. שמירה
         function saveDesign() {
             const canvas = document.getElementById("bouquetCanvas");
-            
-            // משכפל את הקנבס כדי לנקות ממנו את כפתורי המחיקה לפני השמירה
             const clone = canvas.cloneNode(true);
             const buttons = clone.querySelectorAll(".remove-btn");
             buttons.forEach(btn => btn.remove());
-
-            // שמירת ה-HTML הנקי
             document.getElementById("BouquetDesignHtml").value = clone.innerHTML;
         }
     </script>
-
     <style>
-        .flower-item:hover {
-            background-color: #f8f9fa;
-            border-color: #0d6efd !important;
-            transform: scale(1.05);
-            transition: all 0.2s;
-        }
-        .flower-on-canvas {
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .flower-on-canvas:hover {
-            z-index: 100;
-            transform: translate(-50%, -50%) scale(1.1) !important;
+        .flower-item:hover { transform: scale(1.05); border-color: #0d6efd !important; background-color: #f8f9fa; transition: all 0.2s; }
+        .flower-on-canvas { cursor: grab; transition: transform 0.2s; }
+        .flower-on-canvas:active { cursor: grabbing; }
+        
+        /* בעת ריחוף: מיישר את הפרח ומגדיל אותו כדי שיהיה קל לתפוס/למחוק */
+        .flower-on-canvas:hover { 
+            z-index: 100; 
+            transform: translate(-50%, -50%) scale(1.2) rotate(0deg) !important; 
         }
     </style>
 }
