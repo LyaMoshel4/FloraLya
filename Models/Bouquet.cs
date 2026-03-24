@@ -1,8 +1,7 @@
-﻿using LyaShop.Models;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
-namespace LyaShop.Models // שונה מ-LyaFlowerShop ל-LyaShop
+namespace LyaShop.Models
 {
     public class Bouquet
     {
@@ -10,20 +9,21 @@ namespace LyaShop.Models // שונה מ-LyaFlowerShop ל-LyaShop
         public int Id { get; set; }
 
         [Required]
-        [Display(Name = "Bouquet Name")]
-        public string Name { get; set; } = string.Empty;
+        public string Name { get; set; } = "הזר שלי";
 
-        public string? Description { get; set; }
+        public decimal Price { get; set; }
+        public string? BouquetDesignHtml { get; set; }
+        public List<BouquetItem> FlowersInBouquet { get; set; } = new List<BouquetItem>();
+    }
 
-        [Required]
-        public double Price { get; set; }
-
-        public string? Customer { get; set; }
-
-        // הקשר לטבלה המקשרת
-        public virtual ICollection<FlowerInBouquet> FlowersInBouquet { get; set; } = new List<FlowerInBouquet>();
-
-        public string? BouquetDesignHtml { get; set; } // שדה שישמור את קוד ה-HTML של העיצוב
-
+    public class BouquetItem
+    {
+        [Key]
+        public int Id { get; set; }
+        public int BouquetId { get; set; }
+        public Bouquet? Bouquet { get; set; }
+        public int FlowerId { get; set; }
+        public Flower? Flower { get; set; }
+        public int Quantity { get; set; } = 1;
     }
 }

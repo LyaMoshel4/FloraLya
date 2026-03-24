@@ -1,76 +1,92 @@
 ﻿@model LyaShop.Models.Flower
 
-<div class="container mt-4">
-    <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white">
-            <h2 class="mb-0">Add New Flower 🌸</h2>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-8">
-                    <form asp-action="Create" method="post">
-                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-                        <div class="mb-3">
-                            <label asp-for="Name" class="form-label fw-bold">Flower Name</label>
-                            <input asp-for="Name" class="form-control" placeholder="e.g. Red Rose" required />
-                            <span asp-validation-for="Name" class="text-danger"></span>
-                        </div>
-
-                        <div class="mb-3">
-                            <label asp-for="Description" class="form-label fw-bold">Description</label>
-                            <textarea asp-for="Description" class="form-control" rows="3" placeholder="Tell us about this flower..."></textarea>
-                            <span asp-validation-for="Description" class="text-danger"></span>
-                        </div>
-
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg" style="border-radius: 20px; border: none;">
+                <div class="card-header bg-dark text-white text-center" style="border-radius: 20px 20px 0 0;">
+                    <h2 class="mb-0">🌷 הוספת פרח חדש למלאי</h2>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Create" enctype="multipart/form-data">
                         <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="Price" class="form-label fw-bold">Price (₪)</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">₪</span>
-                                    <input asp-for="Price" class="form-control" type="number" step="0.01" required />
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="Name" class="form-label fw-bold">שם הפרח</label>
+                                    <input asp-for="Name" class="form-control" placeholder="למשל: ורד קלאסי" />
                                 </div>
-                                <span asp-validation-for="Price" class="text-danger"></span>
+                                <div class="form-group mb-3">
+                                    <label asp-for="Color" class="form-label fw-bold">שם הצבע (טקסט)</label>
+                                    <input asp-for="Color" id="colorName" class="form-control" placeholder="למשל: ורוד עתיק" />
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label asp-for="Price" class="form-label fw-bold">מחיר</label>
+                                    <input asp-for="Price" class="form-control" type="number" step="0.01" />
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label asp-for="StockQnty" class="form-label fw-bold">כמות במלאי</label>
+                                    <input asp-for="StockQnty" class="form-control" type="number" />
+                                </div>
                             </div>
 
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="StockQnty" class="form-label fw-bold">Quantity in Stock</label>
-                                <input asp-for="StockQnty" class="form-control" type="number" required />
-                                <span asp-validation-for="StockQnty" class="text-danger"></span>
+                            <div class="col-md-6 text-center">
+                                <label class="form-label fw-bold d-block">תצוגה מקדימה</label>
+                                <div class="image-preview-container mb-3 shadow-sm mx-auto" style="width: 200px; height: 200px; background: #f8f9fa; border-radius: 15px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px dashed #ddd;">
+                                    <img id="imgPreview" src="#" alt="Preview" style="max-width: 100%; max-height: 100%; display: none;" />
+                                    <i id="placeholderIcon" class="bi bi-camera text-muted" style="font-size: 3rem;"></i>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <input type="file" name="imageFile" id="imageInput" class="form-control" accept="image/*" />
+                                </div>
+
+                                <div class="form-group mb-3 mt-4">
+                                    <label class="form-label fw-bold">כוון את הצבע (Hue):</label>
+                                    <input asp-for="HueRotation" type="range" class="form-range" id="hueSlider" min="0" max="360" value="0">
+                                    <div class="d-flex justify-content-between">
+                                        <small>0°</small>
+                                        <small id="hueValue">0°</small>
+                                        <small>360°</small>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label asp-for="ImagePath" class="form-label fw-bold">Image Filename</label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="bi bi-image"></i></span>
-                                <input asp-for="ImagePath" class="form-control" placeholder="rose.png" />
-                            </div>
-                            <small class="text-muted">Put the file in <code>wwwroot/images/</code> and type the name here.</small>
-                            <span asp-validation-for="ImagePath" class="text-danger"></span>
-                        </div>
-
-                        <div class="mt-4 pt-3 border-top">
-                            <button type="submit" class="btn btn-primary px-4">
-                                <i class="bi bi-check-lg"></i> Save Flower
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-success btn-lg px-5 shadow-sm" style="border-radius: 30px;">
+                                <i class="bi bi-check-circle"></i> שמור פרח
                             </button>
-                            <a asp-action="Index" class="btn btn-outline-secondary px-4 ms-2">Cancel</a>
+                            <a asp-action="Index" class="btn btn-outline-secondary btn-lg px-5 shadow-sm ms-2" style="border-radius: 30px;">ביטול</a>
                         </div>
                     </form>
-                </div>
-                <div class="col-md-4 d-none d-md-flex align-items-center justify-content-center bg-light rounded">
-                    <div class="text-center text-muted p-3">
-                        <i class="bi bi-flower1" style="font-size: 5rem; color: #dee2e6;"></i>
-                        <p>Preview will appear once saved in the gallery</p>
-                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
-}
+<script>
+    // הצגת תמונה נבחרת
+    document.getElementById('imageInput').onchange = function (evt) {
+        const [file] = this.files;
+        if (file) {
+            const preview = document.getElementById('imgPreview');
+            preview.src = URL.createObjectURL(file);
+            preview.style.display = 'block';
+            document.getElementById('placeholderIcon').style.display = 'none';
+        }
+    };
+
+    // שינוי צבע בשידור חי (Live Preview)
+    const slider = document.getElementById('hueSlider');
+    const previewImg = document.getElementById('imgPreview');
+    const hueDisplay = document.getElementById('hueValue');
+
+    slider.addEventListener('input', function() {
+        const val = this.value;
+        previewImg.style.filter = `hue-rotate(${val}deg)`;
+        hueDisplay.innerText = val + '°';
+    });
+</script>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">

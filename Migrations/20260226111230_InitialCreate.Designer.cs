@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LyaShop.Migrations
 {
     [DbContext(typeof(LyaFlowerShopContext))]
-    [Migration("20260122074946_UpdateBouquetDesign")]
-    partial class UpdateBouquetDesign
+    [Migration("20260226111230_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -35,10 +35,13 @@ namespace LyaShop.Migrations
                     b.Property<string>("BouquetDesignHtml")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Customer")
+                    b.Property<string>("CustomerID")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Description")
+                    b.Property<string>("CustomerName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ImagePath")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")

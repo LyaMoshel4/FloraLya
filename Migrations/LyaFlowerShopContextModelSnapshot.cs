@@ -32,22 +32,42 @@ namespace LyaShop.Migrations
                     b.Property<string>("BouquetDesignHtml")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Customer")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<double>("Price")
-                        .HasColumnType("float");
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
                     b.ToTable("Bouquet");
+                });
+
+            modelBuilder.Entity("LyaShop.Models.BouquetItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BouquetId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("FlowerId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BouquetId");
+
+                    b.HasIndex("FlowerId");
+
+                    b.ToTable("BouquetItem");
                 });
 
             modelBuilder.Entity("LyaShop.Models.Flower", b =>
@@ -58,18 +78,27 @@ namespace LyaShop.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Color")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("HueRotation")
+                        .HasColumnType("int");
+
                     b.Property<string>("ImagePath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ImageUrl")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<double>("Price")
-                        .HasColumnType("float");
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("StockQnty")
                         .HasColumnType("int");
@@ -105,10 +134,29 @@ namespace LyaShop.Migrations
                     b.ToTable("FlowerInBouquet");
                 });
 
-            modelBuilder.Entity("LyaShop.Models.FlowerInBouquet", b =>
+            modelBuilder.Entity("LyaShop.Models.BouquetItem", b =>
                 {
                     b.HasOne("LyaShop.Models.Bouquet", "Bouquet")
                         .WithMany("FlowersInBouquet")
+                        .HasForeignKey("BouquetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LyaShop.Models.Flower", "Flower")
+                        .WithMany()
+                        .HasForeignKey("FlowerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Bouquet");
+
+                    b.Navigation("Flower");
+                });
+
+            modelBuilder.Entity("LyaShop.Models.FlowerInBouquet", b =>
+                {
+                    b.HasOne("LyaShop.Models.Bouquet", "Bouquet")
+                        .WithMany()
                         .HasForeignKey("BouquetId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();

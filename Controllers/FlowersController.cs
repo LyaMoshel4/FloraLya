@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using LyaShop.Data;
 using LyaShop.Models;
+using Microsoft.AspNetCore.Http;
+using System.IO;
 
 namespace LyaShop.Controllers
 {
@@ -21,26 +23,45 @@ namespace LyaShop.Controllers
             return View(flowers);
         }
 
-        // 2. CREATE - יצירת פרח חדש
+        // 2. CREATE (GET) - טופס יצירת פרח חדש
         public IActionResult Create()
         {
             return View();
         }
 
+        // CREATE (POST) - קליטת הטופס ושמירת התמונה והצבע
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Flower flower)
+        public async Task<IActionResult> Create(Flower flower, IFormFile imageFile)
         {
-            if (ModelState.IsValid)
+            ModelState.Remove("imageFile");
+            ModelState.Remove("ImageUrl");
+            ModelState.Remove("ImagePath");
+
+            if (imageFile != null && imageFile.Length > 0)
             {
-                _context.Add(flower);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                var fileName = Guid.NewGuid().ToString() + Path.GetExtension(imageFile.FileName);
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images", fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await imageFile.CopyToAsync(stream);
+                }
+
+                flower.ImageUrl = "/images/" + fileName;
+                flower.ImagePath = "/images/" + fileName;
             }
-            return View(flower);
+            else
+            {
+                flower.ImageUrl = "https://via.placeholder.com/150";
+            }
+
+            _context.Add(flower);
+            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
         }
 
-        // 3. EDIT - עריכת פרח קיים
+        // 3. EDIT (GET) - עריכת פרח קיים
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -53,14 +74,30 @@ namespace LyaShop.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Flower flower)
+        public async Task<IActionResult> Edit(int id, Flower flower, IFormFile? imageFile)
         {
             if (id != flower.Id) return NotFound();
+
+            ModelState.Remove("imageFile");
+            ModelState.Remove("ImageUrl");
+            ModelState.Remove("ImagePath");
 
             if (ModelState.IsValid)
             {
                 try
                 {
+                    if (imageFile != null && imageFile.Length > 0)
+                    {
+                        var fileName = Guid.NewGuid().ToString() + Path.GetExtension(imageFile.FileName);
+                        var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images", fileName);
+
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await imageFile.CopyToAsync(stream);
+                        }
+                        flower.ImageUrl = "/images/" + fileName;
+                    }
+
                     _context.Update(flower);
                     await _context.SaveChangesAsync();
                 }
@@ -85,7 +122,6 @@ namespace LyaShop.Controllers
             return View(flower);
         }
 
-        // אישור מחיקה סופי
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -97,6 +133,18 @@ namespace LyaShop.Controllers
                 await _context.SaveChangesAsync();
             }
             return RedirectToAction(nameof(Index));
+        }
+
+        // ========================================================
+        // התיקון הקריטי לדף ה-Designer
+        // ========================================================
+        public async Task<IActionResult> Designer()
+        {
+            // 1. שולף את הפרחים ושם אותם ב-ViewBag (כדי שהקוד בדף ימצא אותם)
+            ViewBag.Flowers = await _context.Flower.Where(f => f.StockQnty > 0).ToListAsync();
+
+            // 2. שולח אובייקט Bouquet חדש כמודל הראשי (פותר את שגיאת ה-InvalidOperationException)
+            return View(new LyaShop.Models.Bouquet());
         }
     }
 }

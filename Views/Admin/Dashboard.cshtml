@@ -1,0 +1,89 @@
+﻿@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<style>
+    .admin-header {
+        text-align: center;
+        margin-bottom: 50px;
+        color: #d63384;
+        font-family: 'Fredoka', sans-serif;
+    }
+
+    .admin-card {
+        border: none;
+        border-radius: 20px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        background: white;
+        height: 100%;
+        text-align: center;
+        padding: 40px 20px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        cursor: pointer;
+        text-decoration: none;
+        display: block;
+        color: inherit;
+    }
+
+        .admin-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(214, 51, 132, 0.2);
+            color: inherit;
+        }
+
+    .card-icon {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        display: block;
+    }
+
+    .card-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .card-text {
+        color: #666;
+    }
+
+    .bg-light-pink {
+        background-color: #fff0f5;
+        min-height: 80vh;
+        padding-top: 50px;
+        border-radius: 20px;
+    }
+</style>
+
+<div class="bg-light-pink">
+    <div class="container">
+        <h1 class="admin-header">🌸 לוח בקרה למנהלת 🌸</h1>
+
+        <div class="row justify-content-center">
+
+            <div class="col-md-5 mb-4">
+                <a asp-controller="Flowers" asp-action="Index" class="admin-card">
+                    <span class="card-icon">🌷</span>
+                    <h3 class="card-title">ניהול מלאי פרחים</h3>
+                    <p class="card-text">הוספה, עריכה ומחיקה של סוגי פרחים בחנות.</p>
+                    <button class="btn btn-outline-danger mt-3">כניסה למלאי</button>
+                </a>
+            </div>
+
+            <div class="col-md-5 mb-4">
+                <a asp-controller="Bouquets" asp-action="Index" class="admin-card">
+                    <span class="card-icon">📋</span>
+                    <h3 class="card-title">גלריית הזמנות</h3>
+                    <p class="card-text">צפייה בכל הזרים שהלקוחות עיצבו (כולל שם ות.ז).</p>
+                    <button class="btn btn-outline-danger mt-3">צפייה בהזמנות</button>
+                </a>
+            </div>
+
+        </div>
+
+        <div class="text-center mt-5">
+            <a asp-action="Logout" class="text-muted">יציאה מהמערכת</a>
+        </div>
+    </div>
+</div>

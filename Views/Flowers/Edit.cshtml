@@ -1,78 +1,84 @@
 ﻿@model LyaShop.Models.Flower
 
-<div class="container mt-4">
-    <div class="card shadow-sm border-warning">
-        <div class="card-header bg-warning text-dark">
-            <h2 class="mb-0">Edit Flower: @Model.Name 🌿</h2>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-7">
-                    <form asp-action="Edit" method="post">
-                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-                        @* שדה נסתר ל-ID - קריטי לעדכון תקין בבסיס הנתונים *@
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg" style="border-radius: 20px; border: none;">
+                <div class="card-header bg-primary text-white text-center" style="border-radius: 20px 20px 0 0;">
+                    <h2 class="mb-0">✏️ עריכת פרח: @Model.Name</h2>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Edit" enctype="multipart/form-data">
                         <input type="hidden" asp-for="Id" />
-
-                        <div class="mb-3">
-                            <label asp-for="Name" class="form-label fw-bold">Flower Name</label>
-                            <input asp-for="Name" class="form-control" />
-                            <span asp-validation-for="Name" class="text-danger"></span>
-                        </div>
-
-                        <div class="mb-3">
-                            <label asp-for="Description" class="form-label fw-bold">Description</label>
-                            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
-                            <span asp-validation-for="Description" class="text-danger"></span>
-                        </div>
+                        <input type="hidden" asp-for="ImageUrl" />
 
                         <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="Price" class="form-label fw-bold">Price (₪)</label>
-                                <input asp-for="Price" class="form-control" type="number" step="0.01" />
-                                <span asp-validation-for="Price" class="text-danger"></span>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="Name" class="form-label fw-bold">שם הפרח</label>
+                                    <input asp-for="Name" class="form-control" />
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label asp-for="Color" class="form-label fw-bold">צבע</label>
+                                    <input asp-for="Color" class="form-control" />
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label asp-for="Price" class="form-label fw-bold">מחיר</label>
+                                    <input asp-for="Price" class="form-control" type="number" step="0.01" />
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label asp-for="StockQnty" class="form-label fw-bold">מלאי</label>
+                                    <input asp-for="StockQnty" class="form-control" type="number" />
+                                </div>
                             </div>
 
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="StockQnty" class="form-label fw-bold">Quantity in Stock</label>
-                                <input asp-for="StockQnty" class="form-control" type="number" />
-                                <span asp-validation-for="StockQnty" class="text-danger"></span>
+                            <div class="col-md-6 text-center">
+                                <label class="form-label fw-bold d-block">תצוגה מקדימה וצבע</label>
+                                <div class="image-preview-container mb-3 shadow-sm mx-auto" style="width: 200px; height: 200px; background: #f8f9fa; border-radius: 15px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                    <img id="imgPreview" src="@Model.ImageUrl" alt="Preview"
+                                         style="max-width: 100%; max-height: 100%; filter: hue-rotate(@(Model.HueRotation)deg);" />
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label class="small text-muted">החלפת תמונה (אופציונלי):</label>
+                                    <input type="file" name="imageFile" id="imageInput" class="form-control" accept="image/*" />
+                                </div>
+
+                                <div class="form-group mb-3 mt-4">
+                                    <label class="form-label fw-bold">שינוי הגוון (Hue):</label>
+                                    <input asp-for="HueRotation" type="range" class="form-range" id="hueSlider" min="0" max="360">
+                                    <div class="d-flex justify-content-between">
+                                        <small id="hueValue">@Model.HueRotation°</small>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label asp-for="ImagePath" class="form-label fw-bold">Image Filename</label>
-                            <input asp-for="ImagePath" class="form-control" placeholder="e.g., lily.png" />
-                            <small class="text-muted">Update filename if you changed the image in wwwroot/images.</small>
-                        </div>
-
-                        <div class="mt-4 pt-3 border-top">
-                            <button type="submit" class="btn btn-warning px-4">Save Changes</button>
-                            <a asp-action="Index" class="btn btn-outline-secondary px-4 ms-2">Back to List</a>
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg px-5 shadow-sm" style="border-radius: 30px;">עדכן שינויים</button>
+                            <a asp-action="Index" class="btn btn-outline-secondary btn-lg px-5 shadow-sm ms-2" style="border-radius: 30px;">חזרה</a>
                         </div>
                     </form>
-                </div>
-
-                @* תצוגה מקדימה של התמונה הקיימת *@
-                <div class="col-md-5 text-center d-flex flex-column align-items-center justify-content-center bg-light rounded">
-                    <h6 class="text-muted mb-3">Current Image</h6>
-                    @if (!string.IsNullOrEmpty(Model.ImagePath))
-                    {
-                        <img src="/images/@Model.ImagePath" alt="@Model.Name" class="img-fluid rounded shadow" style="max-height: 250px; object-fit: cover;"
-                             onerror="this.src='https://via.placeholder.com/200?text=No+Image+Found'" />
-                    }
-                    else
-                    {
-                        <div class="p-5 border bg-white text-muted">No Image Assigned</div>
-                    }
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
-}
+<script>
+    const slider = document.getElementById('hueSlider');
+    const previewImg = document.getElementById('imgPreview');
+    const hueDisplay = document.getElementById('hueValue');
+
+    slider.addEventListener('input', function() {
+        previewImg.style.filter = `hue-rotate(${this.value}deg)`;
+        hueDisplay.innerText = this.value + '°';
+    });
+
+    document.getElementById('imageInput').onchange = function (evt) {
+        const [file] = this.files;
+        if (file) {
+            previewImg.src = URL.createObjectURL(file);
+        }
+    };
+</script>

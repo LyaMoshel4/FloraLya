@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LyaShop.Migrations
 {
     [DbContext(typeof(LyaFlowerShopContext))]
-    [Migration("20260119111550_UpdateToProfessionalBouquet")]
-    partial class UpdateToProfessionalBouquet
+    [Migration("20260226120732_AddColorFixed")]
+    partial class AddColorFixed
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -32,10 +32,16 @@ namespace LyaShop.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Customer")
+                    b.Property<string>("BouquetDesignHtml")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Description")
+                    b.Property<string>("CustomerID")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CustomerName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ImagePath")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
@@ -58,10 +64,16 @@ namespace LyaShop.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Color")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ImagePath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ImageUrl")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
@@ -114,7 +126,7 @@ namespace LyaShop.Migrations
                         .IsRequired();
 
                     b.HasOne("LyaShop.Models.Flower", "Flower")
-                        .WithMany()
+                        .WithMany("FlowersInBouquets")
                         .HasForeignKey("FlowerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -127,6 +139,11 @@ namespace LyaShop.Migrations
             modelBuilder.Entity("LyaShop.Models.Bouquet", b =>
                 {
                     b.Navigation("FlowersInBouquet");
+                });
+
+            modelBuilder.Entity("LyaShop.Models.Flower", b =>
+                {
+                    b.Navigation("FlowersInBouquets");
                 });
 #pragma warning restore 612, 618
         }

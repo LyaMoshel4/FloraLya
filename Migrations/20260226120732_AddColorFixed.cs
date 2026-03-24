@@ -5,14 +5,20 @@
 namespace LyaShop.Migrations
 {
     /// <inheritdoc />
-    public partial class AddBouquetDesign : Migration
+    public partial class AddColorFixed : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<string>(
-                name: "BouquetDesignHtml",
-                table: "Bouquet",
+                name: "Color",
+                table: "Flower",
+                type: "nvarchar(max)",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "ImageUrl",
+                table: "Flower",
                 type: "nvarchar(max)",
                 nullable: true);
         }
@@ -21,8 +27,12 @@ namespace LyaShop.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "BouquetDesignHtml",
-                table: "Bouquet");
+                name: "Color",
+                table: "Flower");
+
+            migrationBuilder.DropColumn(
+                name: "ImageUrl",
+                table: "Flower");
         }
     }
 }

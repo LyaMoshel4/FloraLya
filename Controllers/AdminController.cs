@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Security.Claims;
@@ -14,38 +15,39 @@ namespace LyaShop.Controllers
             _configuration = configuration;
         }
 
-        // דף ההתחברות (GET)
+        // דף כניסה (GET)
         public IActionResult Login()
         {
-            // אם כבר מחוברים, מעביר ישר לדף הבית
-            if (User.Identity.IsAuthenticated)
+            if (HttpContext.Session.GetString("IsAdmin") == "true")
             {
-                return RedirectToAction("Index", "Bouquets");
+                return RedirectToAction("Dashboard");
             }
             return View();
         }
 
-        // ביצוע ההתחברות (POST)
+        // ביצוע כניסה (POST)
         [HttpPost]
         public async Task<IActionResult> Login(string email, string password)
         {
-            // קריאת ההגדרות מתוך appsettings.json בצורה בטוחה
             var adminEmail = _configuration["AdminSettings:Email"];
             var adminPassword = _configuration["AdminSettings:Password"];
 
-            // בדיקה אם המשתמש הכניס את הפרטים הנכונים
             if (email == adminEmail && password == adminPassword)
             {
+                // 1. שמירה ב-Session
+                HttpContext.Session.SetString("IsAdmin", "true");
+
+                // 2. יצירת זהות מאובטחת (Cookie)
                 var claims = new List<Claim>
                 {
-                    new Claim(ClaimTypes.Name, email),
+                    new Claim(ClaimTypes.Name, "Admin"),
                     new Claim(ClaimTypes.Role, "Admin")
                 };
 
                 var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                 var authProperties = new AuthenticationProperties
                 {
-                    IsPersistent = true // משאיר את המשתמש מחובר גם אם סגר את הדפדפן
+                    IsPersistent = true
                 };
 
                 await HttpContext.SignInAsync(
@@ -53,19 +55,29 @@ namespace LyaShop.Controllers
                     new ClaimsPrincipal(claimsIdentity),
                     authProperties);
 
-                // התחברות הצליחה! מעביר לגלריה
-                return RedirectToAction("Index", "Bouquets");
+                // --- השינוי החשוב: הפניה ללוח הבקרה החדש ---
+                return RedirectToAction("Dashboard");
             }
 
-            // אם הסיסמה שגויה
-            ViewBag.Error = "Invalid email or password";
+            ViewBag.Error = "Invalid Email or Password";
             return View();
         }
 
-        // יציאה מהמערכת (Logout)
+        // --- דף לוח הבקרה החדש ---
+        public IActionResult Dashboard()
+        {
+            // בדיקת אבטחה - אם לא מנהל, זרוק אותו לכניסה
+            if (HttpContext.Session.GetString("IsAdmin") != "true")
+            {
+                return RedirectToAction("Login");
+            }
+            return View();
+        }
+
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            HttpContext.Session.Clear();
             return RedirectToAction("Index", "Home");
         }
     }

@@ -1,69 +1,153 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+
+<!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>@ViewData["Title"] - LyaShop</title>
-		<link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-		<link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-		<link rel="stylesheet" href="~/LyaShop.styles.css" asp-append-version="true" />
-	</head>
-	<body>
-		<header>
-			<nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-				<div class="container-fluid">
-					<a class="navbar-brand fw-bold" asp-area="" asp-controller="Home" asp-action="Index">
-						🌸 LyaShop
-					</a>
-					<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-							aria-expanded="false" aria-label="Toggle navigation">
-						<span class="navbar-toggler-icon"></span>
-					</button>
-					<div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-						<ul class="navbar-nav flex-grow-1">
-							<li class="nav-item">
-								<a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-							</li>
-							<li class="nav-item">
-								<a class="nav-link text-dark" asp-area="" asp-controller="Bouquets" asp-action="Index">Bouquets Gallery</a>
-							</li>
-						</ul>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - FloraLya</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/LyaShop.styles.css" asp-append-version="true" />
 
-						<ul class="navbar-nav">
-							@if (User.Identity.IsAuthenticated)
-							{
-							<li class="nav-item">
-								<span class="nav-link text-dark fw-bold">Hello, Admin! 👑</span>
-							</li>
-							<li class="nav-item">
-								<a class="nav-link text-danger fw-bold" asp-controller="Admin" asp-action="Logout">Logout</a>
-							</li>
-							}
-							else
-							{
-							<li class="nav-item">
-								<a class="nav-link text-dark" asp-controller="Admin" asp-action="Login">Admin Login</a>
-							</li>
-							}
-						</ul>
-					</div>
-				</div>
-			</nav>
-		</header>
-		<div class="container">
-			<main role="main" class="pb-3">
-				@RenderBody()
-			</main>
-		</div>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
 
-		<footer class="border-top footer text-muted text-center py-3 mt-4">
-			<div class="container">
-				© 2026 - LyaShop - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-			</div>
-		</footer>
-		<script src="~/lib/jquery/dist/jquery.min.js"></script>
-		<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-		<script src="~/js/site.js" asp-append-version="true"></script>
-		@await RenderSectionAsync("Scripts", required: false)
-	</body>
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #fdfbf7; /* רקע עדין ונקי */
+        }
+
+        .navbar {
+            background-color: #ffffff !important;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.04);
+        }
+
+        .navbar-brand {
+            font-family: 'Playfair Display', serif;
+            color: #2b4a36 !important; /* ירוק יער מהלוגו */
+            font-weight: 600;
+            font-size: 1.6rem;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-link {
+            color: #4a4a4a !important;
+            font-weight: 500;
+            margin: 0 10px;
+            transition: color 0.3s ease;
+        }
+
+            .nav-link:hover {
+                color: #b89a6c !important; /* מעבר עכבר לזהב/ברונזה */
+            }
+
+        .btn-create-nav {
+            background-color: #2b4a36 !important; /* כפתור ירוק אלגנטי */
+            color: white !important;
+            border-radius: 50px;
+            padding: 6px 20px;
+            transition: all 0.3s ease;
+        }
+
+            .btn-create-nav:hover {
+                background-color: #b89a6c !important; /* הופך לזהב במעבר עכבר */
+                color: white !important;
+            }
+
+        .footer {
+            background-color: transparent;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.9rem;
+        }
+    </style>
+
+    @await RenderSectionAsync("Styles", required: false)
+
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light border-bottom mb-3">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">FloraLya</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">דף הבית</a>
+                        </li>
+
+                        @{
+                            var isAdmin = HttpContextAccessor.HttpContext.Session.GetString("IsAdmin") == "true";
+                            var customerName = HttpContextAccessor.HttpContext.Session.GetString("CustomerName");
+                        }
+
+                        @if (isAdmin)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Admin" asp-action="Dashboard">⚙️ לוח בקרה</a>
+                            </li>
+                        }
+
+                        @if (!string.IsNullOrEmpty(customerName))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link btn-create-nav" asp-controller="Bouquets" asp-action="Create">✨ יצירת זר חדש</a>
+                            </li>
+                        }
+                    </ul>
+                    <ul class="navbar-nav">
+                        @if (!string.IsNullOrEmpty(customerName))
+                        {
+                            <li class="nav-item">
+                                <span class="nav-link">שלום, @customerName ✨</span>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-danger" asp-controller="Customers" asp-action="Login">יציאה</a>
+                            </li>
+                        }
+                        else if (!isAdmin)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Admin" asp-action="Login">כניסת מנהלים</a>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <span class="nav-link text-danger" style="font-weight:600;">מחובר כמנהל</span>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Admin" asp-action="Logout">יציאה</a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Flowers" asp-action="Designer">🌿 עצב זר אישי</a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted text-center py-3">
+        <div class="container">
+            &copy; 2026 - FloraLya - <a asp-area="" asp-controller="Home" asp-action="Privacy" style="color:#b89a6c; text-decoration:none;">Privacy</a>
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
 </html>

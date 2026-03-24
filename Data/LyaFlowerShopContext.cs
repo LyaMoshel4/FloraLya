@@ -1,12 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using LyaShop.Models;
-using LyaShop.Models;
 
-namespace LyaShop.Data // וודאי שזה ה-Namespace הנכון לפי התמונות שלך
+namespace LyaShop.Data
 {
     public class LyaFlowerShopContext : DbContext
     {
-        // חובה: ה-Constructor שמקבל Options ומעביר אותם לבסיס (base)
         public LyaFlowerShopContext(DbContextOptions<LyaFlowerShopContext> options)
             : base(options)
         {
@@ -18,7 +16,7 @@ namespace LyaShop.Data // וודאי שזה ה-Namespace הנכון לפי הת�
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // הגדרת קשרים בסיסית
+            // הגדרת מפתח ראשי לטבלה המקשרת
             modelBuilder.Entity<FlowerInBouquet>()
                 .HasKey(fb => fb.Id);
         }

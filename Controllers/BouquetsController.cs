@@ -15,24 +15,24 @@ namespace LyaShop.Controllers
             _context = context;
         }
 
-        // ==========================================
-        // 1. דף הגלריה (Index) - פתוח לכולם
-        // ==========================================
-        public async Task<IActionResult> Index()
+        // ==========================================
+        // 1. דף הגלריה (Index) - פתוח לכולם
+        // ==========================================
+        public async Task<IActionResult> Index()
         {
             var bouquets = await _context.Bouquet
-                .Include(b => b.FlowersInBouquet)
-                .ThenInclude(fb => fb.Flower)
-                .ToListAsync();
+              .Include(b => b.FlowersInBouquet)
+              .ThenInclude(fb => fb.Flower)
+              .ToListAsync();
             return View(bouquets);
         }
 
-        // ==========================================
-        // 2. יצירת זר חדש (Create) - פתוח לכולם!
-        // ==========================================
+        // ==========================================
+        // 2. יצירת זר חדש (Create) - פתוח לכולם!
+        // ==========================================
 
-        // הסרתי מכאן את [Authorize] כדי שגם לקוחות יוכלו לעצב
-        public async Task<IActionResult> Create()
+        // הסרתי מכאן את [Authorize] כדי שגם לקוחות יוכלו לעצב
+        public async Task<IActionResult> Create()
         {
             ViewBag.Flowers = await _context.Flower.ToListAsync();
             return View();
@@ -40,8 +40,8 @@ namespace LyaShop.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        // גם מכאן הסרתי את [Authorize]
-        public async Task<IActionResult> Create([Bind("Id,Name,Price,BouquetDesignHtml")] Bouquet bouquet, int[] selectedFlowers)
+        // גם מכאן הסרתי את [Authorize]
+        public async Task<IActionResult> Create([Bind("Id,Name,Price,BouquetDesignHtml")] Bouquet bouquet, int[] selectedFlowers)
         {
             if (ModelState.IsValid)
             {
@@ -70,24 +70,24 @@ namespace LyaShop.Controllers
             return View(bouquet);
         }
 
-        // ==========================================
-        // 3. עריכת זר (Edit) - מוגן (רק למנהל)
-        // ==========================================
+        // ==========================================
+        // 3. עריכת זר (Edit) - מוגן (רק למנהל)
+        // ==========================================
 
-        [Authorize] // <--- זה נשאר מוגן כדי שלקוחות לא ישנו מחירים
-        public async Task<IActionResult> Edit(int? id)
+        [Authorize] // <--- זה נשאר מוגן כדי שלקוחות לא ישנו מחירים
+        public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
 
             var bouquet = await _context.Bouquet.FindAsync(id);
             if (bouquet == null) return NotFound();
 
-            // --- השורה הזו היא הקריטית שהוספנו ---
-            // היא טוענת את רשימת הפרחים כדי שיופיעו בתפריט בצד
-            ViewBag.Flowers = await _context.Flower.ToListAsync();
-            // -------------------------------------
+            // --- השורה הזו היא הקריטית שהוספנו ---
+            // היא טוענת את רשימת הפרחים כדי שיופיעו בתפריט בצד
+            ViewBag.Flowers = await _context.Flower.ToListAsync();
+            // -------------------------------------
 
-            return View(bouquet);
+            return View(bouquet);
         }
 
         [HttpPost]
@@ -114,14 +114,14 @@ namespace LyaShop.Controllers
             return View(bouquet);
         }
 
-        // ==========================================
-        // 4. מחיקת זר (Delete) - מוגן (רק למנהל)
-        // ==========================================
+        // ==========================================
+        // 4. מחיקת זר (Delete) - מוגן (רק למנהל)
+        // ==========================================
 
-        [HttpPost]
+        [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize] // <--- זה נשאר מוגן כדי שלקוחות לא ימחקו אחד לשני
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
             var bouquet = await _context.Bouquet.FindAsync(id);
             if (bouquet != null)
