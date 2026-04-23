@@ -1,0 +1,55 @@
+﻿@{
+    ViewData["Title"] = "הזמנה הושלמה";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7 text-center">
+            <div class="card shadow-lg border-0 rounded-4 p-5" style="background-color: #ffffff;">
+                <div class="mb-4">
+                    <div class="display-1 text-success">🌿</div>
+                    <h1 class="display-5 fw-bold" style="font-family: 'Playfair Display', serif; color: #2b4a36;">תודה רבה!</h1>
+                    <p class="fs-5 text-muted">ההזמנה שלך התקבלה בהצלחה במערכת FloraLya.</p>
+                </div>
+
+                <hr class="my-4" style="border-color: #eee;">
+
+                <div class="py-3">
+                    <h4 class="fw-bold mb-3">מספר הזמנה: <span style="color: #b89a6c;">#@ViewBag.OrderId</span></h4>
+                    <p class="text-secondary">אנחנו כבר מתחילים לשזור את הזר המיוחד שלך. <br> נעדכן אותך ברגע שהשליח יצא לדרך!</p>
+                </div>
+
+                <div class="mt-4 d-grid gap-2 d-sm-flex justify-content-sm-center">
+                    <a asp-controller="Home" asp-action="Index" class="btn btn-lg px-4 me-sm-3 text-white" style="background-color: #2b4a36; border-radius: 50px;">חזרה לדף הבית</a>
+                    <a asp-controller="Flowers" asp-action="Designer" class="btn btn-outline-secondary btn-lg px-4" style="border-radius: 50px;">לעצב זר נוסף</a>
+                </div>
+
+                <div class="mt-5">
+                    <p class="small text-muted">יש לך שאלות? אנחנו כאן בוואטסאפ: 050-XXXXXXX</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    body {
+        background-color: #fdfbf7;
+    }
+
+    .card {
+        animation: fadeIn 0.8s ease-out;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>

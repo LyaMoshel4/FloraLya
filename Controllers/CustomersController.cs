@@ -5,13 +5,13 @@ namespace LyaShop.Controllers
 {
     public class CustomersController : Controller
     {
-        // דף הכניסה (Login)
+        // 1. דף הכניסה (Login) - תצוגה
         public IActionResult Login()
         {
             return View();
         }
 
-        // קבלת הנתונים מהטופס
+        // 2. קבלת הנתונים מהטופס ושמירה ב-Session
         [HttpPost]
         public IActionResult Login(string customerName, string customerID)
         {
@@ -21,11 +21,20 @@ namespace LyaShop.Controllers
                 return View();
             }
 
-            // שמירת הפרטים בזיכרון (Session) כדי שנשתמש בהם ביצירת הזר
+            // שמירת הפרטים ב-Session
+            // זה מה שגורם ללייאאוט להראות "שלום, יוסי"
             HttpContext.Session.SetString("CustomerName", customerName);
             HttpContext.Session.SetString("CustomerID", customerID);
 
-            // הפניה לדף הבית אחרי התחברות מוצלחת
+            // הפניה לדף הבית אחרי התחברות
+            return RedirectToAction("Index", "Home");
+        }
+
+        // 3. יציאה מהמערכת (Logout)
+        // חשוב! כדי שהכפתור בלייאאוט יעבוד
+        public IActionResult Logout()
+        {
+            HttpContext.Session.Clear(); // מוחק את כל נתוני המשתמש מהזיכרון
             return RedirectToAction("Index", "Home");
         }
     }

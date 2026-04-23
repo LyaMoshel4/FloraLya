@@ -1,0 +1,66 @@
+﻿@model LyaShop.Models.Bouquet
+
+@{
+    ViewData["Title"] = "פרטי משלוח";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+                <div class="card-header text-white text-center py-4" style="background-color: #2b4a36;">
+                    <h2 class="mb-0" style="font-family: 'Playfair Display', serif;">כמעט סיימנו! 🌸</h2>
+                    <p class="mb-0 opacity-75">רק נשאר להזין לאן לשלוח את הזר המקסים שעיצבת</p>
+                </div>
+
+                <div class="card-body p-5 bg-white">
+                    <form asp-action="SaveGuestOrder" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div class="mb-4">
+                            <label for="guestName" class="form-label fw-bold">שם מלא</label>
+                            <input type="text" name="guestName" id="guestName" class="form-control form-control-lg border-2 shadow-sm" placeholder="למי הזר מיועד?" required />
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="guestPhone" class="form-label fw-bold">מספר טלפון</label>
+                            <input type="tel" name="guestPhone" id="guestPhone" class="form-control form-control-lg border-2 shadow-sm" placeholder="ליצירת קשר עם השליח" required />
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="guestAddress" class="form-label fw-bold">כתובת למשלוח</label>
+                            <textarea name="guestAddress" id="guestAddress" rows="3" class="form-control border-2 shadow-sm" placeholder="עיר, רחוב, קומה ומספר דירה" required></textarea>
+                        </div>
+
+                        <div class="alert alert-light border-1 mb-4" style="background-color: #fdfbf7;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted small">סיכום זמני:</span>
+                                <span class="fw-bold text-success" style="font-size: 1.2rem;">₪@Context.Session.GetString("TempBouquetPrice")</span>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-lg w-100 shadow-sm fw-bold py-3 text-white" style="background-color: #b89a6c; border-radius: 50px; transition: all 0.3s ease;">
+                            אישור הזמנה וסיום ✨
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-4">
+                        <a asp-action="Create" class="text-muted text-decoration-none small">← חזרה לעיצוב הזר</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-control:focus {
+        border-color: #b89a6c;
+        box-shadow: 0 0 0 0.25rem rgba(184, 154, 108, 0.25);
+    }
+
+    .btn:hover {
+        background-color: #2b4a36 !important;
+        transform: translateY(-2px);
+    }
+</style>

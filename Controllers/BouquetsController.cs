@@ -1,8 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using LyaShop.Data;
 using LyaShop.Models;
+using Microsoft.AspNetCore.Http;
+using System.Text.Json;
 
 namespace LyaShop.Controllers
 {
@@ -15,126 +16,122 @@ namespace LyaShop.Controllers
             _context = context;
         }
 
-        // ==========================================
-        // 1. דף הגלריה (Index) - פתוח לכולם
-        // ==========================================
-        public async Task<IActionResult> Index()
+        // 1. דף ניהול - הגנה: רק מנהל רואה את רשימת כל הזרים
+        public async Task<IActionResult> Index()
         {
-            var bouquets = await _context.Bouquet
-              .Include(b => b.FlowersInBouquet)
-              .ThenInclude(fb => fb.Flower)
-              .ToListAsync();
-            return View(bouquets);
+            var isAdmin = HttpContext.Session.GetString("IsAdmin") == "true";
+
+            // אם לא מנהל - זורק אותו לדף הבית
+            if (!isAdmin)
+                return RedirectToAction("Index", "Home");
+
+            return View(await _context.Bouquet.ToListAsync());
         }
 
-        // ==========================================
-        // 2. יצירת זר חדש (Create) - פתוח לכולם!
-        // ==========================================
-
-        // הסרתי מכאן את [Authorize] כדי שגם לקוחות יוכלו לעצב
-        public async Task<IActionResult> Create()
+        // 2. דף המעצב (Designer)
+        [HttpGet]
+        public async Task<IActionResult> Create()
         {
             ViewBag.Flowers = await _context.Flower.ToListAsync();
             return View();
         }
 
+        // 3. שמירת הזר
         [HttpPost]
         [ValidateAntiForgeryToken]
-        // גם מכאן הסרתי את [Authorize]
-        public async Task<IActionResult> Create([Bind("Id,Name,Price,BouquetDesignHtml")] Bouquet bouquet, int[] selectedFlowers)
+        public async Task<IActionResult> Create(Bouquet bouquet, int[] selectedFlowers)
         {
+            HttpContext.Session.SetString("TempBouquetName", bouquet.Name ?? "זר בעיצוב אישי");
+            HttpContext.Session.SetString("TempBouquetPrice", bouquet.Price.ToString());
+            HttpContext.Session.SetString("TempBouquetHtml", bouquet.BouquetDesignHtml ?? "");
+
+            if (selectedFlowers != null)
+                HttpContext.Session.SetString("TempSelectedFlowers", JsonSerializer.Serialize(selectedFlowers));
+
+            if (string.IsNullOrEmpty(HttpContext.Session.GetString("CustomerName")))
+            {
+                return RedirectToAction("GuestDetails");
+            }
+
             if (ModelState.IsValid)
             {
                 _context.Add(bouquet);
                 await _context.SaveChangesAsync();
 
-                if (selectedFlowers != null && selectedFlowers.Length > 0)
+                if (selectedFlowers != null)
                 {
                     foreach (var flowerId in selectedFlowers)
                     {
-                        var flowerInBouquet = new FlowerInBouquet
-                        {
-                            BouquetId = bouquet.Id,
-                            FlowerId = flowerId,
-                            Quantity = 1
-                        };
-                        _context.FlowerInBouquet.Add(flowerInBouquet);
+                        _context.FlowerInBouquet.Add(new FlowerInBouquet { BouquetId = bouquet.Id, FlowerId = flowerId, Quantity = 1 });
                     }
                     await _context.SaveChangesAsync();
                 }
 
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction("Checkout", new { id = bouquet.Id });
             }
 
             ViewBag.Flowers = await _context.Flower.ToListAsync();
             return View(bouquet);
         }
 
-        // ==========================================
-        // 3. עריכת זר (Edit) - מוגן (רק למנהל)
-        // ==========================================
-
-        [Authorize] // <--- זה נשאר מוגן כדי שלקוחות לא ישנו מחירים
-        public async Task<IActionResult> Edit(int? id)
+        // 4. דף תשלום
+        [HttpGet]
+        public async Task<IActionResult> Checkout(int id)
         {
-            if (id == null) return NotFound();
-
             var bouquet = await _context.Bouquet.FindAsync(id);
-            if (bouquet == null) return NotFound();
+            if (bouquet == null) return RedirectToAction("Create");
+            return View(bouquet);
+        }
 
-            // --- השורה הזו היא הקריטית שהוספנו ---
-            // היא טוענת את רשימת הפרחים כדי שיופיעו בתפריט בצד
-            ViewBag.Flowers = await _context.Flower.ToListAsync();
-            // -------------------------------------
+        // 5. פרטי אורח
+        [HttpGet]
+        public IActionResult GuestDetails()
+        {
+            if (string.IsNullOrEmpty(HttpContext.Session.GetString("TempBouquetHtml")))
+                return RedirectToAction("Create");
 
-            return View(bouquet);
+            return View();
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Price,BouquetDesignHtml")] Bouquet bouquet)
+        public async Task<IActionResult> SaveGuestOrder(string guestName, string guestPhone, string guestAddress)
         {
-            if (id != bouquet.Id) return NotFound();
-
-            if (ModelState.IsValid)
+            var bouquet = new Bouquet
             {
-                try
-                {
-                    _context.Update(bouquet);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!BouquetExists(bouquet.Id)) return NotFound();
-                    else throw;
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            return View(bouquet);
-        }
+                Name = (HttpContext.Session.GetString("TempBouquetName") ?? "זר") + " (אורח: " + guestName + ")",
+                Price = decimal.TryParse(HttpContext.Session.GetString("TempBouquetPrice"), out decimal p) ? p : 0,
+                BouquetDesignHtml = HttpContext.Session.GetString("TempBouquetHtml")
+            };
 
-        // ==========================================
-        // 4. מחיקת זר (Delete) - מוגן (רק למנהל)
-        // ==========================================
+            _context.Add(bouquet);
+            await _context.SaveChangesAsync();
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Authorize] // <--- זה נשאר מוגן כדי שלקוחות לא ימחקו אחד לשני
-        public async Task<IActionResult> Delete(int id)
-        {
-            var bouquet = await _context.Bouquet.FindAsync(id);
-            if (bouquet != null)
+            var flowersJson = HttpContext.Session.GetString("TempSelectedFlowers");
+            if (!string.IsNullOrEmpty(flowersJson))
             {
-                _context.Bouquet.Remove(bouquet);
+                var selectedFlowers = JsonSerializer.Deserialize<int[]>(flowersJson);
+                foreach (var flowerId in selectedFlowers)
+                {
+                    _context.FlowerInBouquet.Add(new FlowerInBouquet { BouquetId = bouquet.Id, FlowerId = flowerId, Quantity = 1 });
+                }
                 await _context.SaveChangesAsync();
             }
-            return RedirectToAction(nameof(Index));
+
+            return RedirectToAction("Checkout", new { id = bouquet.Id });
         }
 
-        private bool BouquetExists(int id)
+        // 6. דף אישור סופי
+        [HttpGet]
+        public IActionResult OrderConfirmation(int id)
         {
-            return _context.Bouquet.Any(e => e.Id == id);
+            HttpContext.Session.Remove("TempBouquetName");
+            HttpContext.Session.Remove("TempBouquetPrice");
+            HttpContext.Session.Remove("TempBouquetHtml");
+            HttpContext.Session.Remove("TempSelectedFlowers");
+
+            ViewBag.OrderId = id;
+            return View();
         }
     }
 }

@@ -1,0 +1,97 @@
+﻿@model LyaShop.Models.Bouquet
+
+@{
+    ViewData["Title"] = "תשלום מאובטח";
+}
+
+<div class="container mt-5" dir="rtl">
+    <div class="row justify-content-center">
+        <div class="col-md-4 order-md-2 mb-4">
+            <h4 class="d-flex justify-content-between align-items-center mb-3">
+                <span style="font-family: 'Playfair Display', serif; color: #2b4a36;">סיכום הזמנה</span>
+            </h4>
+            <ul class="list-group mb-3 shadow-sm">
+                <li class="list-group-item d-flex justify-content-between lh-condensed">
+                    <div>
+                        <h6 class="my-0">@Model.Name</h6>
+                        <small class="text-muted">עיצוב אישי FloraLya</small>
+                    </div>
+                    <span class="text-muted">₪@Model.Price</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between bg-light">
+                    <div class="text-success">
+                        <h6 class="my-0">משלוח</h6>
+                        <small>משלוח אקספרס</small>
+                    </div>
+                    <span class="text-success">₪0</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>סה"כ לתשלום</span>
+                    <strong style="color: #b89a6c; font-size: 1.2rem;">₪@Model.Price</strong>
+                </li>
+            </ul>
+        </div>
+
+        <div class="col-md-7 order-md-1">
+            <div class="card shadow-lg border-0 rounded-4 p-4 bg-white">
+                <h4 class="mb-4" style="font-family: 'Playfair Display', serif; color: #2b4a36;">פרטי תשלום</h4>
+
+                <form asp-controller="Bouquets" asp-action="OrderConfirmation" asp-route-id="@Model.Id" method="get">
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label fw-bold">שם בעל הכרטיס</label>
+                            <input type="text" class="form-control border-2 shadow-sm py-2" placeholder="ישראל ישראלי" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label fw-bold">מספר כרטיס</label>
+                            <div class="input-group shadow-sm">
+                                <span class="input-group-text bg-white border-2 border-end-0">💳</span>
+                                <input type="text" class="form-control border-2 border-start-0 py-2" placeholder="**** **** **** ****" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">תוקף</label>
+                            <input type="text" class="form-control border-2 shadow-sm py-2" placeholder="MM/YY" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">CVV</label>
+                            <input type="text" class="form-control border-2 shadow-sm py-2" placeholder="3 ספרות בגב הכרטיס" required>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <button class="btn btn-lg w-100 text-white shadow-sm fw-bold py-3" type="submit" style="background-color: #2b4a36; border-radius: 50px; transition: all 0.3s ease;">
+                        אישור תשלום - ₪@Model.Price ✨
+                    </button>
+                </form>
+
+                <div class="text-center mt-4">
+                    <p class="text-muted small mb-0">🔒 סליקה מאובטחת בתקן PCI-DSS</p>
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="Secure" height="20" class="mt-2 opacity-50">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-control:focus {
+        border-color: #b89a6c !important;
+        box-shadow: 0 0 0 0.25rem rgba(184, 154, 108, 0.2);
+    }
+
+    .btn:hover {
+        background-color: #b89a6c !important;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
+    }
+
+    label {
+        color: #444;
+    }
+</style>

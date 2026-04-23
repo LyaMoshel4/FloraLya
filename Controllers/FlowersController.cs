@@ -16,7 +16,7 @@ namespace LyaShop.Controllers
             _context = context;
         }
 
-        // 1. INDEX - תצוגת רשימת הפרחים
+        // 1. INDEX - תצוגת רשימת הפרחים לניהול המלאי
         public async Task<IActionResult> Index()
         {
             var flowers = await _context.Flower.ToListAsync();
@@ -133,18 +133,6 @@ namespace LyaShop.Controllers
                 await _context.SaveChangesAsync();
             }
             return RedirectToAction(nameof(Index));
-        }
-
-        // ========================================================
-        // התיקון הקריטי לדף ה-Designer
-        // ========================================================
-        public async Task<IActionResult> Designer()
-        {
-            // 1. שולף את הפרחים ושם אותם ב-ViewBag (כדי שהקוד בדף ימצא אותם)
-            ViewBag.Flowers = await _context.Flower.Where(f => f.StockQnty > 0).ToListAsync();
-
-            // 2. שולח אובייקט Bouquet חדש כמודל הראשי (פותר את שגיאת ה-InvalidOperationException)
-            return View(new LyaShop.Models.Bouquet());
         }
     }
 }
