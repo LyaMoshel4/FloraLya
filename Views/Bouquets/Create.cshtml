@@ -16,7 +16,7 @@
 				<div class="card shadow-sm p-4 border-0">
 					<div class="mb-3">
 						<label asp-for="Name" class="form-label fw-bold">Bouquet Name</label>
-						<input asp-for="Name" class="form-control" placeholder="e.g., Summer Dream" required />
+						<input asp-for="Name" id="Name" class="form-control" placeholder="e.g., Summer Dream" required />
 					</div>
 
 					<div class="mb-3">
@@ -72,6 +72,31 @@
 @section Scripts {
 	<script>
 		$(document).ready(function () {
+
+			// === 1. טעינת טיוטה קיימת מהדפדפן (למשל כשחוזרים אחורה) ===
+			var savedDraft = localStorage.getItem('bouquet_draft');
+			if (savedDraft) {
+				try {
+					var draft = JSON.parse(savedDraft);
+					if (draft.name) $('#Name').val(draft.name);
+					if (draft.flowers) {
+						draft.flowers.forEach(function(f) {
+							$(`.flower-qty[data-id="${f.id}"]`).val(f.qty);
+						});
+					}
+				} catch (e) {
+					console.error("Error loading bouquet draft:", e);
+				}
+			}
+
+			// הרצה ראשונית כדי לצייר את הזר מיד אם שוחזרה טיוטה
+			updateBouquet();
+
+			// שמירת טיוטה גם בעת שינוי שם הזר
+			$('#Name').on('input', function() {
+				saveCurrentDraft();
+			});
+
 			$('.btn-plus').click(function () {
 				var input = $(this).siblings('.flower-qty');
 				input.val(parseInt(input.val()) + 1);
@@ -86,21 +111,32 @@
 				}
 			});
 
-			// השינוי היחיד שביצעתי: הוספת מעטפת HTML בזמן השמירה בלבד
 			$('#bouquetForm').on('submit', function() {
 				const canvas = $('#bouquetCanvas');
 				const canvasClone = canvas.clone();
 				canvasClone.find('#placeholderText').remove();
 
-				// אנחנו שומרים את ה-HTML עם הגדלים הנוכחיים של הקנבס שלך
 				const w = canvas.width();
 				const h = canvas.height();
 
-				// יוצרים מעטפת שנועלת את הגודל עבור הגלריה
 				const finalHtml = `<div style="position:relative; width:${w}px; height:${h}px; background:#080808; overflow:hidden;">${canvasClone.html()}</div>`;
-
 				$('#designHtmlInput').val(finalHtml);
 			});
+
+			// === 2. פונקציה פנימית לשמירת המצב הנוכחי של הזר ===
+			function saveCurrentDraft() {
+				var draft = {
+					name: $('#Name').val(),
+					flowers: []
+				};
+				$('.flower-qty').each(function() {
+					draft.flowers.push({
+						id: $(this).data('id'),
+						qty: parseInt($(this).val()) || 0
+					});
+				});
+				localStorage.setItem('bouquet_draft', JSON.stringify(draft));
+			}
 
 			function updateBouquet() {
 				var canvas = $('#bouquetCanvas');
@@ -132,6 +168,9 @@
 				});
 
 				totalPriceDisplay.val(runningTotal.toFixed(2));
+
+				// קריאה לשמירת הטיוטה בכל פעם שהזר משתנה
+				saveCurrentDraft();
 
 				if (allFlowers.length > 0) {
 					placeholder.hide();

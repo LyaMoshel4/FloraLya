@@ -1,11 +1,11 @@
 ﻿@model LyaShop.Models.Bouquet
 
 @{
-    ViewData["Title"] = "עריכת זר";
+    ViewData["Title"] = "Edit Your Bouquet";
 }
 
-<div class="container mt-4" dir="rtl">
-    <h2 class="mb-4 text-primary text-center">💐 עריכת הזר היוקרתי שלך</h2>
+<div class="container mt-4">
+    <h2 class="mb-4 text-primary">💐 Edit Your Luxury Bouquet</h2>
     <hr />
 
     <div class="row">
@@ -14,32 +14,35 @@
                 <input type="hidden" asp-for="Id" />
                 <input type="hidden" asp-for="BouquetDesignHtml" id="designHtmlInput" />
 
-                <div class="card shadow-sm p-4 border-0 text-end">
+                <div class="card shadow-sm p-4 border-0">
                     <div class="mb-3">
-                        <label asp-for="Name" class="form-label fw-bold">שם הזר</label>
-                        <input asp-for="Name" class="form-control text-end" required />
+                        <label asp-for="Name" class="form-label fw-bold">Bouquet Name</label>
+                        <input asp-for="Name" id="Name" class="form-control" placeholder="e.g., Summer Dream" required />
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">הוספת פרחים לזר הקיים</label>
+                        <label class="form-label fw-bold">Modify Flowers in Bouquet</label>
                         <div id="flowerControls" class="list-group mb-2">
                             @if (ViewBag.Flowers != null)
                             {
                                 foreach (var flower in (IEnumerable<LyaShop.Models.Flower>)ViewBag.Flowers)
                                 {
+                                    // חישוב כמות ראשונית קיימת של פרחים בזר הנוכחי
+                                    var existingQty = Model.BouquetDesignHtml != null && Model.BouquetDesignHtml.Contains(flower.ImageUrl) ? 1 : 0;
+
                                     <div class="list-group-item d-flex justify-content-between align-items-center border-0 bg-light mb-2 rounded">
+                                        <span>@flower.Name <small class="text-muted">(₪@flower.Price)</small></span>
                                         <div class="input-group input-group-sm" style="width: 120px;">
-                                            <button type="button" class="btn btn-outline-secondary btn-plus" data-id="@flower.Id">+</button>
+                                            <button type="button" class="btn btn-outline-secondary btn-minus" data-id="@flower.Id">-</button>
                                             <input type="number" name="flower_@flower.Id" class="form-control text-center flower-qty"
-                                                   value="0" min="0"
+                                                   value="@existingQty" min="0"
                                                    data-id="@flower.Id"
                                                    data-name="@flower.Name"
                                                    data-price="@flower.Price"
                                                    data-img="@flower.ImageUrl"
                                                    data-hue="@flower.HueRotation" readonly>
-                                            <button type="button" class="btn btn-outline-secondary btn-minus" data-id="@flower.Id">-</button>
+                                            <button type="button" class="btn btn-outline-secondary btn-plus" data-id="@flower.Id">+</button>
                                         </div>
-                                        <span class="fw-bold">@flower.Name <small class="text-muted">(₪@flower.Price)</small></span>
                                     </div>
                                 }
                             }
@@ -47,22 +50,26 @@
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="Price" class="form-label fw-bold">מחיר כולל (₪)</label>
-                        <input asp-for="Price" id="totalPrice" class="form-control fw-bold bg-warning text-dark text-center" type="number" step="0.01" readonly />
+                        <label asp-for="Price" class="form-label fw-bold">Total Price (₪)</label>
+                        <input asp-for="Price" id="totalPrice" class="form-control fw-bold bg-warning text-dark" type="number" step="0.01" required readonly value="@Model.Price" />
                     </div>
 
-                    <button type="submit" class="btn btn-success btn-lg w-100 shadow-sm fw-bold">שמור שינויים</button>
-                    <a asp-action="Index" class="btn btn-link w-100 mt-2 text-secondary">ביטול וחזרה לרשימה</a>
+                    <button type="submit" class="btn btn-success btn-lg w-100 shadow-sm fw-bold">Save Changes</button>
                 </div>
+
+                <div id="hiddenFields"></div>
             </form>
         </div>
 
         <div class="col-md-7">
-            <div class="card shadow shadow-lg h-100 bg-white" style="border: 1px solid #eee; position: relative; overflow: hidden; min-height: 600px;">
-                <div id="bouquetCanvas" class="card-body p-0" style="position: relative; width: 100%; height: 600px; background: #080808; overflow: hidden;">
-                    <div id="originalBouquetContent">
-                        @Html.Raw(Model.BouquetDesignHtml)
+            <div class="card shadow-sm h-100 bg-white" style="border: 1px solid #eee; position: relative; overflow: hidden; min-height: 600px;">
+                <div id="bouquetCanvas" class="card-body p-0" style="position: relative; height: 100%; background: #080808;">
+                    <div id="placeholderText" class="text-center text-white-50" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; display: none;">
+                        <p class="fs-4">Select flowers to start designing!</p>
                     </div>
+
+                    @* טעינת ה-HTML הקיים של הזר שנשמר במקור בבסיס הנתונים *@
+                    @Html.Raw(Model.BouquetDesignHtml)
                 </div>
             </div>
         </div>
@@ -70,79 +77,171 @@
 </div>
 
 @section Scripts {
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function () {
-            const basePrice = parseFloat('@Model.Price') || 0;
-            $('#totalPrice').val(basePrice.toFixed(2));
+
+            // הרצה ראשונית של עדכון הזר כדי לחבר את פונקציות הציור בצורה דינמית למצב הקיים
+            updateBouquet(true);
 
             $('.btn-plus').click(function () {
                 var input = $(this).siblings('.flower-qty');
                 input.val(parseInt(input.val()) + 1);
-                updateBouquet();
+                updateBouquet(false);
             });
 
             $('.btn-minus').click(function () {
                 var input = $(this).siblings('.flower-qty');
                 if (parseInt(input.val()) > 0) {
                     input.val(parseInt(input.val()) - 1);
-                    updateBouquet();
+                    updateBouquet(false);
                 }
             });
 
-            function updateBouquet() {
-                var canvas = $('#bouquetCanvas');
-                canvas.find('.new-flower-head, #newSvgLayer').remove();
+            $('#bouquetForm').on('submit', function() {
+                const canvas = $('#bouquetCanvas');
+                const canvasClone = canvas.clone();
+                canvasClone.find('#placeholderText').remove();
 
-                var addedPrice = 0;
-                var newFlowers = [];
+                const w = canvas.width();
+                const h = canvas.height();
+
+                const finalHtml = `<div style="position:relative; width:${w}px; height:${h}px; background:#080808; overflow:hidden;">${canvasClone.html()}</div>`;
+                $('#designHtmlInput').val(finalHtml);
+            });
+
+            function updateBouquet(isFirstLoad) {
+                var canvas = $('#bouquetCanvas');
+                var placeholder = $('#placeholderText');
+                var hiddenFields = $('#hiddenFields');
+                var totalPriceDisplay = $('#totalPrice');
+
+                // אם זה לא הטעינה הראשונה והמשתמש שינה כמויות - מנקים לחלוטין את ה-HTML הישן שנשמר ב-DB
+                if (!isFirstLoad) {
+                    canvas.find('.flower-instance, .bouquet-base, #bouquetSvgLayer, svg, div:not(#placeholderText)').remove();
+                }
+
+                hiddenFields.empty();
+                var allFlowers = [];
+                var runningTotal = 0;
 
                 $('.flower-qty').each(function () {
-                    var qty = parseInt($(this).val());
+                    var qty = parseInt($(this).val()) || 0;
+                    var id = $(this).data('id');
+                    var name = $(this).data('name').toLowerCase();
+                    var img = $(this).data('img');
+                    var price = parseFloat($(this).data('price')) || 0;
+                    var hue = $(this).data('hue') || 0;
+
                     if (qty > 0) {
-                        addedPrice += (qty * parseFloat($(this).data('price')));
+                        runningTotal += (qty * price);
                         for (var i = 0; i < qty; i++) {
-                            newFlowers.push({
-                                img: $(this).data('img'),
-                                hue: $(this).data('hue')
-                            });
+                            allFlowers.push({ id: id, name: name, img: img, hue: hue });
+                            hiddenFields.append('<input type="hidden" name="selectedFlowers" value="' + id + '">');
                         }
                     }
                 });
 
-                $('#totalPrice').val((basePrice + addedPrice).toFixed(2));
+                totalPriceDisplay.val(runningTotal.toFixed(2));
 
-                if (newFlowers.length > 0) {
-                    // תיקון המיקום: הזזתי את ה-Y למטה ואת ה-X מעט ימינה שיתאים לסרט
-                    var ribbonX = (canvas.width() / 2) + 5;
-                    var ribbonY = 480; // הנמכתי מ-435 ל-480 כדי שישב על הסרט
-
-                    var svgHtml = `<svg id="newSvgLayer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; pointer-events: none;">`;
-
-                    newFlowers.forEach(function (flower) {
-                        var angleDeg = (Math.random() * 80) - 40;
-                        var angleRad = angleDeg * Math.PI / 180;
-                        var radius = 140 + Math.random() * 80; // הגבעולים יגיעו גבוה יותר
-
-                        var fx = ribbonX + Math.sin(angleRad) * radius;
-                        var fy = ribbonY - Math.cos(angleRad) * radius;
-
-                        svgHtml += `<path d="M ${fx} ${fy} Q ${ribbonX} ${ribbonY - 50} ${ribbonX} ${ribbonY}"
-                                   fill="none" stroke="#527a48" stroke-width="6" stroke-linecap="round" />`;
-
-                        var headSize = 85;
-                        var headStyle = `position: absolute; width: ${headSize}px; left: ${fx - (headSize/2)}px; top: ${fy - (headSize/2)}px; z-index: 100; filter: hue-rotate(${flower.hue}deg) drop-shadow(2px 4px 8px rgba(0,0,0,0.5)); pointer-events: none;`;
-                        canvas.append(`<img src="${flower.img}" class="new-flower-head" style="${headStyle}">`);
-                    });
-
-                    svgHtml += `</svg>`;
-                    canvas.append(svgHtml);
+                // אם המשתמש רוקן את כל הפרחים בשינוי
+                if (allFlowers.length === 0 && !isFirstLoad) {
+                    placeholder.show();
+                    return;
                 }
-            }
 
-            $('#bouquetForm').on('submit', function() {
-                $('#designHtmlInput').val($('#bouquetCanvas').html());
-            });
+                // אם אנחנו בטעינה הראשונה, אנחנו מציגים את מה שהגיע מה-DB ולא דורסים אותו
+                if (isFirstLoad) {
+                    placeholder.hide();
+                    return;
+                }
+
+                placeholder.hide();
+                var canvasWidth = canvas.width();
+                var canvasHeight = canvas.height();
+                var ribbonX = canvasWidth / 2;
+                var ribbonY = canvasHeight - 180;
+
+                allFlowers.forEach(function(flower, index) {
+                    var angleDeg = (Math.random() * 100) - 50;
+                    var angleRad = angleDeg * Math.PI / 180;
+                    var minRadius = 140;
+                    var maxRadius = 200 + (allFlowers.length * 2);
+                    var radius = minRadius + Math.random() * (maxRadius - minRadius);
+
+                    flower.x = ribbonX + Math.sin(angleRad) * radius;
+                    flower.y = ribbonY - Math.cos(angleRad) * radius;
+                    flower.zIndex = Math.round(flower.y);
+                    flower.angle = angleDeg;
+                });
+
+                allFlowers.sort((a, b) => a.zIndex - b.zIndex);
+
+                var svgHtml = `<svg id="bouquetSvgLayer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; pointer-events: none;">`;
+
+                for(var i = 0; i < 35; i++) {
+                    var bAngleDeg = (Math.random() * 24) - 12;
+                    var bAngleRad = bAngleDeg * Math.PI / 180;
+                    var bLength = 90 + Math.random() * 30;
+                    var bEndX = ribbonX + Math.sin(bAngleRad) * bLength;
+                    var bEndY = ribbonY + Math.cos(bAngleRad) * bLength;
+                    var bWidth = 4 + Math.random() * 3;
+                    var bColor = ['#385731', '#4a6b36', '#2d4c24'][Math.floor(Math.random()*3)];
+                    svgHtml += `<line x1="${ribbonX}" y1="${ribbonY - 10}" x2="${bEndX}" y2="${bEndY}" stroke="${bColor}" stroke-width="${bWidth}" stroke-linecap="round" filter="drop-shadow(1px 2px 2px rgba(0,0,0,0.3))" />`;
+                }
+
+                var numLeaves = 30 + allFlowers.length * 2;
+                for(var i = 0; i < numLeaves; i++) {
+                    var lAngleDeg = (Math.random() * 160) - 80;
+                    var lAngleRad = lAngleDeg * Math.PI / 180;
+                    var lLength = 120 + Math.random() * 150;
+                    var lEndX = ribbonX + Math.sin(lAngleRad) * lLength;
+                    var lEndY = ribbonY - Math.cos(lAngleRad) * lLength;
+                    var lColor = ['#2b4a1f', '#3a5a2b', '#486e35'][Math.floor(Math.random()*3)];
+                    svgHtml += `<line x1="${ribbonX}" y1="${ribbonY}" x2="${lEndX}" y2="${lEndY}" stroke="${lColor}" stroke-width="2" opacity="0.6" />`;
+                    var leafPath = "M 0 0 C -15 -20 -15 -45 0 -60 C 15 -45 15 -20 0 0";
+                    var scale = 0.5 + Math.random() * 0.5;
+                    svgHtml += `<path d="${leafPath}" fill="${lColor}" transform="translate(${lEndX}, ${lEndY}) rotate(${lAngleDeg}) scale(${scale})" filter="drop-shadow(1px 2px 3px rgba(0,0,0,0.4))" />`;
+                }
+
+                allFlowers.forEach(function(f) {
+                    var controlX = ribbonX + (f.x - ribbonX) * 0.3;
+                    var controlY = ribbonY - (ribbonY - f.y) * 0.4;
+                    var stemWidth = 6 + Math.random() * 2;
+                    var stemColor = ['#527a48', '#618a55', '#456b3d'][Math.floor(Math.random()*3)];
+                    svgHtml += `<path d="M ${f.x} ${f.y} Q ${controlX} ${controlY} ${ribbonX} ${ribbonY}" fill="none" stroke="${stemColor}" stroke-width="${stemWidth}" stroke-linecap="round" filter="drop-shadow(2px 2px 4px rgba(0,0,0,0.4))" />`;
+                });
+
+                svgHtml += `</svg>`;
+                canvas.append(svgHtml);
+
+                var ribbonHtml = `
+                    <div class="bouquet-base" style="position: absolute; top: ${ribbonY - 15}px; left: 50%; transform: translateX(-50%); z-index: 200; width: 55px; height: 35px; background: repeating-linear-gradient(to bottom, #bd9f75, #bd9f75 3px, #a3855e 3px, #a3855e 6px); border-radius: 6px; box-shadow: inset 0 0 15px rgba(0,0,0,0.6), 0 5px 10px rgba(0,0,0,0.4);">
+                    </div>`;
+                canvas.append(ribbonHtml);
+
+                allFlowers.forEach(function (flower) {
+                    var headSize = 75 + (Math.random() * 10);
+                    var naturalRotation = flower.angle + (Math.random() * 20 - 10);
+
+                    var headStyle = `
+                        position: absolute;
+                        width: ${headSize}px;
+                        height: ${headSize}px;
+                        object-fit: contain;
+                        left: ${flower.x - (headSize / 2)}px;
+                        top: ${flower.y - (headSize * 0.65)}px;
+                        z-index: ${100 + flower.zIndex};
+                        transform: rotate(${naturalRotation}deg);
+                        filter: drop-shadow(3px 6px 10px rgba(0,0,0,0.5)) hue-rotate(${flower.hue}deg);
+                        pointer-events: none;`;
+
+                    let imgSrc = flower.img || '';
+                    imgSrc = imgSrc.replace('/images//images/', '/images/').replace('//', '/');
+                    if (!imgSrc.startsWith('/')) imgSrc = '/' + imgSrc;
+
+                    canvas.append(`<img src="${imgSrc}" class="flower-instance" style="${headStyle}">`);
+                });
+            }
         });
     </script>
 }
