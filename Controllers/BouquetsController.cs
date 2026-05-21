@@ -16,19 +16,18 @@ namespace LyaShop.Controllers
             _context = context;
         }
 
-        // 1. דף ניהול - הגנה: רק מנהל רואה את רשימת כל הזרים
+        // 1. דף ניהול - רק מנהל רואה את רשימת כל הזרים
         public async Task<IActionResult> Index()
         {
             var isAdmin = HttpContext.Session.GetString("IsAdmin") == "true";
 
-            // אם לא מנהל - זורק אותו לדף הבית
             if (!isAdmin)
                 return RedirectToAction("Index", "Home");
 
             return View(await _context.Bouquet.ToListAsync());
         }
 
-        // 2. דף המעצב (Designer)
+        // 2. דף המעצב (Designer) - יצירה
         [HttpGet]
         public async Task<IActionResult> Create()
         {
@@ -72,6 +71,78 @@ namespace LyaShop.Controllers
 
             ViewBag.Flowers = await _context.Flower.ToListAsync();
             return View(bouquet);
+        }
+
+        // --- הוספתי את עריכת הזר ---
+        [HttpGet]
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var bouquet = await _context.Bouquet.FindAsync(id);
+            if (bouquet == null) return NotFound();
+
+            // טעינת הפרחים כדי שיופיעו בתפריט הצד של המעצב
+            ViewBag.Flowers = await _context.Flower.ToListAsync();
+            return View(bouquet);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, Bouquet bouquet)
+        {
+            if (id != bouquet.Id) return NotFound();
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    _context.Update(bouquet);
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!BouquetExists(bouquet.Id)) return NotFound();
+                    else throw;
+                }
+                return RedirectToAction(nameof(Index));
+            }
+            ViewBag.Flowers = await _context.Flower.ToListAsync();
+            return View(bouquet);
+        }
+
+        // --- הוספתי את מחיקת הזר ---
+        [HttpGet]
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var bouquet = await _context.Bouquet.FindAsync(id);
+            if (bouquet == null) return NotFound();
+
+            return View(bouquet);
+        }
+
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            var bouquet = await _context.Bouquet.FindAsync(id);
+            if (bouquet != null)
+            {
+                // מחיקת הפרחים המקושרים לזר קודם (כדי למנוע שגיאת Foreign Key)
+                var flowersInBouquet = _context.FlowerInBouquet.Where(f => f.BouquetId == id);
+                _context.FlowerInBouquet.RemoveRange(flowersInBouquet);
+
+                _context.Bouquet.Remove(bouquet);
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        private bool BouquetExists(int id)
+        {
+            return _context.Bouquet.Any(e => e.Id == id);
         }
 
         // 4. דף תשלום

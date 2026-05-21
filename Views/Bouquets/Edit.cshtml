@@ -1,265 +1,148 @@
 ﻿@model LyaShop.Models.Bouquet
 
 @{
-    ViewData["Title"] = "Edit Bouquet";
-    var flowersList = ViewBag.Flowers as List<LyaShop.Models.Flower>;
-
-    // פונקציית ניקוי הנתיבים (נשארת אותו דבר כי היא עובדת מצוין)
-    string GetCleanUrl(string rawPath)
-    {
-        if (string.IsNullOrEmpty(rawPath)) return "/images/default.png";
-        string fileName = System.IO.Path.GetFileName(rawPath);
-        return "/images/" + fileName;
-    }
+    ViewData["Title"] = "עריכת זר";
 }
 
-<div class="container mt-4">
-    <div class="text-center mb-4">
-        <h1 class="display-4 text-primary fw-bold">Edit Your Bouquet ✏️</h1>
-        <p class="lead text-muted">Add flowers to create a beautiful bunch.</p>
-    </div>
+<div class="container mt-4" dir="rtl">
+    <h2 class="mb-4 text-primary text-center">💐 עריכת הזר היוקרתי שלך</h2>
+    <hr />
 
     <div class="row">
-        @* --- צד שמאל: רשימת הפרחים --- *@
-        <div class="col-md-3">
-            <div class="card shadow-sm mb-3">
-                <div class="card-header bg-warning text-dark fw-bold">
-                    Choose Flowers 🌸
-                </div>
-                <div class="card-body" style="max-height: 500px; overflow-y: auto;">
-                    <div class="row g-2">
-                        @if (flowersList != null)
-                        {
-                            foreach (var flower in flowersList)
-                            {
-                                var finalPath = GetCleanUrl(flower.ImagePath);
-                                
-                                <div class="col-6 text-center">
-                                    <div class="flower-item border rounded p-2 pointer" 
-                                         onclick="addFlower('@finalPath', '@flower.Price')">
-                                        
-                                        <img src="@finalPath" class="img-fluid mb-1" 
-                                             style="height: 60px; object-fit: contain;"
-                                             onerror="this.src='https://via.placeholder.com/60?text=Flower'">
-                                        
-                                        <div style="font-size: 0.8rem;">@flower.Name</div>
-                                        <div class="fw-bold text-success">₪@flower.Price</div>
-                                    </div>
-                                </div>
-                            }
-                        }
-                    </div>
-                </div>
-            </div>
-            
-            <button type="button" class="btn btn-warning w-100 mb-2 fw-bold" onclick="undoLastFlower()">
-                ↩ Undo Last Flower
-            </button>
+        <div class="col-md-5">
+            <form asp-action="Edit" method="post" id="bouquetForm">
+                <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="BouquetDesignHtml" id="designHtmlInput" />
 
-            <a asp-action="Index" class="btn btn-secondary w-100">Back to Gallery</a>
+                <div class="card shadow-sm p-4 border-0 text-end">
+                    <div class="mb-3">
+                        <label asp-for="Name" class="form-label fw-bold">שם הזר</label>
+                        <input asp-for="Name" class="form-control text-end" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">הוספת פרחים לזר הקיים</label>
+                        <div id="flowerControls" class="list-group mb-2">
+                            @if (ViewBag.Flowers != null)
+                            {
+                                foreach (var flower in (IEnumerable<LyaShop.Models.Flower>)ViewBag.Flowers)
+                                {
+                                    <div class="list-group-item d-flex justify-content-between align-items-center border-0 bg-light mb-2 rounded">
+                                        <div class="input-group input-group-sm" style="width: 120px;">
+                                            <button type="button" class="btn btn-outline-secondary btn-plus" data-id="@flower.Id">+</button>
+                                            <input type="number" name="flower_@flower.Id" class="form-control text-center flower-qty"
+                                                   value="0" min="0"
+                                                   data-id="@flower.Id"
+                                                   data-name="@flower.Name"
+                                                   data-price="@flower.Price"
+                                                   data-img="@flower.ImageUrl"
+                                                   data-hue="@flower.HueRotation" readonly>
+                                            <button type="button" class="btn btn-outline-secondary btn-minus" data-id="@flower.Id">-</button>
+                                        </div>
+                                        <span class="fw-bold">@flower.Name <small class="text-muted">(₪@flower.Price)</small></span>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Price" class="form-label fw-bold">מחיר כולל (₪)</label>
+                        <input asp-for="Price" id="totalPrice" class="form-control fw-bold bg-warning text-dark text-center" type="number" step="0.01" readonly />
+                    </div>
+
+                    <button type="submit" class="btn btn-success btn-lg w-100 shadow-sm fw-bold">שמור שינויים</button>
+                    <a asp-action="Index" class="btn btn-link w-100 mt-2 text-secondary">ביטול וחזרה לרשימה</a>
+                </div>
+            </form>
         </div>
 
-        @* --- צד ימין: משטח העבודה --- *@
-        <div class="col-md-9">
-            <form asp-action="Edit" id="designForm" onsubmit="saveDesign()">
-                <input type="hidden" asp-for="Id" />
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-                <input type="hidden" id="BouquetDesignHtml" name="BouquetDesignHtml" />
-                
-                <div class="mb-3">
-                    <label asp-for="Name" class="form-label fw-bold">Bouquet Name:</label>
-                    <input asp-for="Name" class="form-control" placeholder="E.g., Summer Vibes" required />
-                    <span asp-validation-for="Name" class="text-danger"></span>
-                </div>
-
-                @* --- CANVAS --- *@
-                <div class="card shadow-sm border-0 mb-3 position-relative bg-light" style="height: 500px; overflow: hidden;">
-                    
-                    @* רקע וסרט *@
-                    <img src="/images/wrapping_paper.png" 
-                         class="position-absolute top-50 start-50 translate-middle" 
-                         style="height: 90%; opacity: 0.9; z-index: 1;" 
-                         alt="Wrapping">
-                    
-                    <img src="/images/ribbon_pink.png" 
-                         class="position-absolute start-50 translate-middle-x" 
-                         style="bottom: 100px; width: 100px; z-index: 20;" 
-                         alt="Ribbon">
-
-                    <div id="bouquetCanvas" class="w-100 h-100 position-relative" style="z-index: 10;">
+        <div class="col-md-7">
+            <div class="card shadow shadow-lg h-100 bg-white" style="border: 1px solid #eee; position: relative; overflow: hidden; min-height: 600px;">
+                <div id="bouquetCanvas" class="card-body p-0" style="position: relative; width: 100%; height: 600px; background: #080808; overflow: hidden;">
+                    <div id="originalBouquetContent">
                         @Html.Raw(Model.BouquetDesignHtml)
                     </div>
                 </div>
-
-                <div class="d-flex justify-content-between align-items-center bg-white p-3 rounded shadow-sm border">
-                    <div>
-                        <span class="h4">Total Price: </span>
-                        <span class="h3 text-success fw-bold">₪<span id="totalPriceDisplay">@Model.Price</span></span>
-                        <input type="hidden" id="Price" name="Price" value="@Model.Price" />
-                    </div>
-                    <button type="submit" class="btn btn-success btn-lg px-5">Save Changes 💾</button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        const flowerDatabase = [
-            @if (flowersList != null)
-            {
-                foreach(var f in flowersList)
-                {
-                    var cleanPath = GetCleanUrl(f.ImagePath);
-                    @:{ path: "@cleanPath", price: @f.Price },
+        $(document).ready(function () {
+            const basePrice = parseFloat('@Model.Price') || 0;
+            $('#totalPrice').val(basePrice.toFixed(2));
+
+            $('.btn-plus').click(function () {
+                var input = $(this).siblings('.flower-qty');
+                input.val(parseInt(input.val()) + 1);
+                updateBouquet();
+            });
+
+            $('.btn-minus').click(function () {
+                var input = $(this).siblings('.flower-qty');
+                if (parseInt(input.val()) > 0) {
+                    input.val(parseInt(input.val()) - 1);
+                    updateBouquet();
                 }
-            }
-        ];
+            });
 
-        let currentPrice = parseFloat("@Model.Price");
-        if (isNaN(currentPrice)) currentPrice = 0;
+            function updateBouquet() {
+                var canvas = $('#bouquetCanvas');
+                canvas.find('.new-flower-head, #newSvgLayer').remove();
 
-        document.addEventListener("DOMContentLoaded", function() {
-            const canvas = document.getElementById("bouquetCanvas");
-            const allFlowers = canvas.children;
+                var addedPrice = 0;
+                var newFlowers = [];
 
-            // סידור מחדש של פרחים שכבר קיימים
-            for (let i = 0; i < allFlowers.length; i++) {
-                let flowerEl = allFlowers[i];
-                let imgEl = flowerEl.querySelector("img") || flowerEl; 
-                
-                // תיקון נתיבים
-                if (imgEl && imgEl.tagName === 'IMG') {
-                    let src = imgEl.getAttribute('src');
-                    if (src) {
-                        let filename = src.split('/').pop().split('\\').pop();
-                        imgEl.src = '/images/' + filename;
-                        // מוסיף הגדרה שהסיבוב יהיה מהגבעול
-                        imgEl.style.transformOrigin = "bottom center";
+                $('.flower-qty').each(function () {
+                    var qty = parseInt($(this).val());
+                    if (qty > 0) {
+                        addedPrice += (qty * parseFloat($(this).data('price')));
+                        for (var i = 0; i < qty; i++) {
+                            newFlowers.push({
+                                img: $(this).data('img'),
+                                hue: $(this).data('hue')
+                            });
+                        }
                     }
-                }
+                });
 
-                // זיהוי מחיר
-                let detectedPrice = 0;
-                if (imgEl && imgEl.src) {
-                    let currentFilename = imgEl.src.split('/').pop();
-                    let match = flowerDatabase.find(f => f.path.includes(currentFilename));
-                    if (match) detectedPrice = match.price;
-                }
-                flowerEl.setAttribute('data-price', detectedPrice);
-                
-                if (!flowerEl.querySelector('.remove-btn')) {
-                    if (getComputedStyle(flowerEl).position === 'static') flowerEl.style.position = 'absolute';
-                    addDeleteButton(flowerEl);
-                } else {
-                    flowerEl.querySelector('.remove-btn').onclick = function() { removeSpecificFlower(flowerEl); };
+                $('#totalPrice').val((basePrice + addedPrice).toFixed(2));
+
+                if (newFlowers.length > 0) {
+                    // תיקון המיקום: הזזתי את ה-Y למטה ואת ה-X מעט ימינה שיתאים לסרט
+                    var ribbonX = (canvas.width() / 2) + 5;
+                    var ribbonY = 480; // הנמכתי מ-435 ל-480 כדי שישב על הסרט
+
+                    var svgHtml = `<svg id="newSvgLayer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; pointer-events: none;">`;
+
+                    newFlowers.forEach(function (flower) {
+                        var angleDeg = (Math.random() * 80) - 40;
+                        var angleRad = angleDeg * Math.PI / 180;
+                        var radius = 140 + Math.random() * 80; // הגבעולים יגיעו גבוה יותר
+
+                        var fx = ribbonX + Math.sin(angleRad) * radius;
+                        var fy = ribbonY - Math.cos(angleRad) * radius;
+
+                        svgHtml += `<path d="M ${fx} ${fy} Q ${ribbonX} ${ribbonY - 50} ${ribbonX} ${ribbonY}"
+                                   fill="none" stroke="#527a48" stroke-width="6" stroke-linecap="round" />`;
+
+                        var headSize = 85;
+                        var headStyle = `position: absolute; width: ${headSize}px; left: ${fx - (headSize/2)}px; top: ${fy - (headSize/2)}px; z-index: 100; filter: hue-rotate(${flower.hue}deg) drop-shadow(2px 4px 8px rgba(0,0,0,0.5)); pointer-events: none;`;
+                        canvas.append(`<img src="${flower.img}" class="new-flower-head" style="${headStyle}">`);
+                    });
+
+                    svgHtml += `</svg>`;
+                    canvas.append(svgHtml);
                 }
             }
-            updatePrice(0);
+
+            $('#bouquetForm').on('submit', function() {
+                $('#designHtmlInput').val($('#bouquetCanvas').html());
+            });
         });
-
-        // --- הפונקציה המעודכנת למיקום מדויק בתוך הזר ---
-        function addFlower(imgUrl, price) {
-            const canvas = document.getElementById("bouquetCanvas");
-            const priceVal = parseFloat(price);
-
-            const div = document.createElement("div");
-            div.className = "flower-on-canvas position-absolute";
-            
-            // --- תיקון המיקום: צמצום טווח הפיזור ---
-            
-            // 1. שמאל/ימין: טווח צר מאוד סביב המרכז (45% עד 55%)
-            // זה מבטיח שהפרחים יישארו בתוך המשולש
-            let randomLeft = 50 + (Math.random() * 14 - 7); 
-            
-            // 2. גובה: אזור ה"פתיחה" של הזר (קצת מעל האמצע)
-            // כדי שייראו יוצאים מהעטיפה
-            let randomTop = 38 + (Math.random() * 10 - 5);
-            
-            // 3. סיבוב: נותן הטיה קלה ימינה או שמאלה
-            let randomRotate = Math.floor(Math.random() * 40) - 20;
-
-            div.style.left = randomLeft + "%"; 
-            div.style.top = randomTop + "%";
-            div.style.transform = `translate(-50%, -50%) rotate(${randomRotate}deg)`;
-            
-            div.setAttribute('data-price', priceVal);
-
-            // השינוי החשוב: הגדרת נקודת הציר לתחתית התמונה (הגבעול)
-            div.innerHTML = `
-                <div class="position-relative">
-                    <img src="${imgUrl}" style="height: 120px; filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.3)); transform-origin: bottom center;">
-                </div>
-            `;
-
-            addDeleteButton(div);
-            canvas.appendChild(div);
-            updatePrice(priceVal);
-        }
-
-        function addDeleteButton(flowerEl) {
-            if(flowerEl.querySelector('.remove-btn')) return;
-
-            let btn = document.createElement('button');
-            btn.innerHTML = 'X';
-            btn.className = 'remove-btn btn btn-danger btn-sm rounded-circle position-absolute top-0 start-100 translate-middle p-0';
-            btn.style.width = '20px';
-            btn.style.height = '20px';
-            btn.style.lineHeight = '1';
-            btn.style.fontSize = '12px';
-            btn.type = 'button';
-            
-            let target = flowerEl.querySelector('.position-relative') || flowerEl;
-            target.appendChild(btn);
-
-            btn.onclick = function() { removeSpecificFlower(flowerEl); };
-        }
-
-        function removeSpecificFlower(element) {
-            let price = parseFloat(element.getAttribute('data-price'));
-            if (isNaN(price)) price = 0;
-            element.remove();
-            updatePrice(-price);
-        }
-
-        function undoLastFlower() {
-            const canvas = document.getElementById("bouquetCanvas");
-            const flowers = canvas.querySelectorAll(".flower-on-canvas");
-            if (flowers.length > 0) {
-                removeSpecificFlower(flowers[flowers.length - 1]);
-            } else {
-                alert("No flowers to remove!");
-            }
-        }
-
-        function updatePrice(amount) {
-            currentPrice += amount;
-            if (currentPrice < 0) currentPrice = 0;
-            document.getElementById("totalPriceDisplay").innerText = currentPrice.toFixed(2);
-            document.getElementById("Price").value = currentPrice;
-        }
-
-        function saveDesign() {
-            const canvas = document.getElementById("bouquetCanvas");
-            const clone = canvas.cloneNode(true);
-            const buttons = clone.querySelectorAll(".remove-btn");
-            buttons.forEach(btn => btn.remove());
-            document.getElementById("BouquetDesignHtml").value = clone.innerHTML;
-        }
     </script>
-    <style>
-        .flower-item:hover { transform: scale(1.05); border-color: #0d6efd !important; background-color: #f8f9fa; transition: all 0.2s; }
-        .flower-on-canvas { cursor: grab; transition: transform 0.2s; }
-        .flower-on-canvas:active { cursor: grabbing; }
-        
-        /* בעת ריחוף: מיישר את הפרח ומגדיל אותו כדי שיהיה קל לתפוס/למחוק */
-        .flower-on-canvas:hover { 
-            z-index: 100; 
-            transform: translate(-50%, -50%) scale(1.2) rotate(0deg) !important; 
-        }
-    </style>
 }
