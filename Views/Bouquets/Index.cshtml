@@ -1,73 +1,167 @@
 ﻿@model IEnumerable<LyaShop.Models.Bouquet>
 
+@{
+    ViewData["Title"] = "ניהול זרים - FloraLya";
+}
+
+<div class="container mt-5" dir="rtl">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold" style="color: #2b4a36; font-family: 'Playfair Display', serif;">רשימת זרים שנוצרו 🌸</h2>
+        <span class="badge bg-light text-dark border p-2 fs-6">סה"כ במערכת: @Model.Count() זרים</span>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden mb-5">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 text-center">
+                <thead class="table-dark" style="background-color: #2b4a36 !important; border-color: #2b4a36;">
+                    <tr>
+                        <th scope="col" class="py-3">שם הזר</th>
+                        <th scope="col" class="py-3">תמונה / תצוגה</th>
+                        <th scope="col" class="py-3">מחיר</th>
+                        <th scope="col" class="py-3">פעולות</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td class="fw-bold text-secondary fs-5">
+                                @item.Name
+                            </td>
+
+                            <td class="d-flex justify-content-center">
+                                <div class="rounded-3 overflow-hidden shadow-sm border d-flex align-items-center justify-content-center" style="width: 130px; height: 130px; background: #080808; position: relative;">
+                                    @if (!string.IsNullOrEmpty(item.BouquetDesignHtml))
+                                    {
+                                        <div class="bouquet-preview-container" style="transform: scale(0.18); transform-origin: center center; width: 700px; height: 600px; pointer-events: none; position: absolute;">
+                                            @Html.Raw(item.BouquetDesignHtml)
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="text-white-50 small">אין תצוגה</div>
+                                    }
+                                </div>
+                            </td>
+
+                            <td class="fw-bold text-success fs-5">
+                                ₪@item.Price
+                            </td>
+
+                            <td>
+                                <div class="dropdown">
+                                    <button class="btn btn-link text-dark p-0 border-0 fs-4" type="button" id="actions-@item.Id" data-bs-toggle="dropdown" aria-expanded="false" style="text-decoration: none; line-height: 1;">
+                                        ⋮
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end text-right shadow-sm border-0 rounded-3" aria-labelledby="actions-@item.Id" style="min-width: 160px; direction: rtl; text-align: right;">
+                                        <li>
+                                            <button type="button" class="dropdown-menu-item dropdown-item py-2"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#detailsModal-@item.Id">
+                                                🔍 פרטי הזמנה
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item py-2 text-primary" asp-controller="Bouquets" asp-action="Edit" asp-route-id="@item.Id">
+                                                ✏️ עריכת זר
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item py-2 text-danger fw-bold" asp-controller="Bouquets" asp-action="Delete" asp-route-id="@item.Id" onclick="return confirm('האם אתה בטוח שברצונך למחוק זר זה?');">
+                                                🗑️ מחיקת זר
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @foreach (var item in Model)
+    {
+        <div class="modal fade" id="detailsModal-@item.Id" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg rounded-4">
+                    <div class="modal-header bg-light border-0 py-3 px-4">
+                        <h5 class="modal-title fw-bold" style="color: #2b4a36;">📋 פרטי משלוח והזמנה</h5>
+                        <button type="button" class="btn-close m-0 ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4 text-start" style="direction: rtl; text-align: right;">
+
+                        <div class="mb-3 border-bottom pb-2">
+                            <span class="text-muted small d-block">💐 שם הזר</span>
+                            <strong class="fs-5 text-dark">@item.Name</strong>
+                        </div>
+
+                        <div class="mb-3 border-bottom pb-2">
+                            <span class="text-muted small d-block">👤 מעצב הזר</span>
+                            <strong class="fs-6 text-dark">משתמש רשום במערכת LyaShop</strong>
+                        </div>
+
+                        <div class="mb-3 border-bottom pb-2">
+                            <span class="text-muted small d-block">📍 כתובת למשלוח</span>
+                            <strong class="fs-6 text-success">
+                                @(string.IsNullOrEmpty(item.ShippingAddress) ? "לא הוכנסה כתובת (הזמנה ישנה)" : item.ShippingAddress)
+                            </strong>
+                        </div>
+
+                        <div class="mb-3 border-bottom pb-2">
+                            <span class="text-muted small d-block">📞 טלפון ליצירת קשר</span>
+                            <strong class="fs-6 text-primary" style="direction: ltr; display: inline-block;">
+                                @(string.IsNullOrEmpty(item.CustomerPhone) ? "אין מספר טלפון" : item.CustomerPhone)
+                            </strong>
+                        </div>
+
+                        <div class="mb-3 border-bottom pb-2">
+                            <span class="text-muted small d-block">📅 תאריך ושעת הזמנה</span>
+                            <strong class="fs-6 text-dark">@item.CreatedAt.ToString("dd/MM/yyyy HH:mm")</strong>
+                        </div>
+
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">💰 סה"כ לתשלום</span>
+                            <strong class="fs-4 text-danger">₪@item.Price</strong>
+                        </div>
+
+                    </div>
+                    <div class="modal-footer border-0 bg-light py-2">
+                        <button type="button" class="btn text-white fw-bold px-4" style="background-color: #2b4a36; border-radius: 50px;" data-bs-dismiss="modal">סגור חלונית</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
 <style>
-    /* הריבוע השחור בטבלה */
-    .bouquet-preview-box {
-        width: 150px;
-        height: 150px;
-        background-color: #080808;
-        border-radius: 12px;
-        position: relative;
-        overflow: hidden;
-        margin: 0 auto;
-        border: 1px solid #333;
+    /* הוספת הגדרות עיצוב כדי לוודא שאלמנטי ה-HTML הפנימיים של הזר ממורכזים בתוך הריבוע הקטן */
+    .bouquet-preview-container > div {
+        margin: 0 auto !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        position: absolute !important;
     }
 
-    /* הקוד שדואג שיראו את כל הזר במרכז הריבוע */
-    .bouquet-content-scaler {
-        position: absolute;
-        /* מציב את נקודת האמצע של הזר במרכז הריבוע */
-        top: 50%;
-        left: 50%;
-        /* מקטין את הזר ל-25% מהגודל המקורי וממרכז אותו */
-        transform: translate(-50%, -50%) scale(0.25);
-        transform-origin: center center;
-        white-space: nowrap;
+    .table th {
+        font-weight: 500;
+        letter-spacing: 0.5px;
     }
 
-        /* תיקון לתמונות בתוך הזר כדי שלא ימרחו */
-        .bouquet-content-scaler img {
-            max-width: none !important;
-        }
+    .dropdown-item:hover {
+        background-color: #f8f9fa;
+        color: #2b4a36 !important;
+    }
 
-    .table td {
-        vertical-align: middle;
+    .dropdown-menu {
+        transform: translate3d(0px, 26px, 0px) !important;
+    }
+
+    .btn-link:focus, .btn-link:active {
+        box-shadow: none !important;
     }
 </style>
-
-<div class="container mt-5 text-end" dir="rtl">
-    <h2 class="text-center mb-4" style="font-family: serif; color: #2b4a36;">רשימת זרים שנוצרו</h2>
-
-    <table class="table table-hover shadow-sm bg-white">
-        <thead class="table-dark">
-            <tr>
-                <th class="text-center">שם הזר</th>
-                <th class="text-center">תמונה</th>
-                <th class="text-center">מחיר</th>
-                <th class="text-center">פעולות</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model)
-            {
-                <tr>
-                    <td class="text-center fw-bold">@item.Name</td>
-                    <td>
-                        <div class="bouquet-preview-box">
-                            <div class="bouquet-content-scaler">
-                                @Html.Raw(item.BouquetDesignHtml)
-                            </div>
-                        </div>
-                    </td>
-                    <td class="text-center text-success fw-bold">₪@item.Price</td>
-                    <td class="text-center">
-                        <div class="btn-group gap-2">
-                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-primary btn-sm rounded-pill">עריכה</a>
-                            <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-outline-danger btn-sm rounded-pill">מחיקה</a>
-                        </div>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-</div>

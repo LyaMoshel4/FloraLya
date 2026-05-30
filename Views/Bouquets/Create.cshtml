@@ -13,6 +13,9 @@
 			<form asp-action="Create" method="post" id="bouquetForm">
 				<input type="hidden" asp-for="BouquetDesignHtml" id="designHtmlInput" />
 
+				<input type="hidden" name="shippingAddress" id="hiddenAddress" />
+				<input type="hidden" name="customerPhone" id="hiddenPhone" />
+
 				<div class="card shadow-sm p-4 border-0">
 					<div class="mb-3">
 						<label asp-for="Name" class="form-label fw-bold">Bouquet Name</label>
@@ -50,7 +53,7 @@
 						<input asp-for="Price" id="totalPrice" class="form-control fw-bold bg-warning text-dark" type="number" step="0.01" required readonly value="0" />
 					</div>
 
-					<button type="submit" class="btn btn-success btn-lg w-100 shadow-sm fw-bold">Order This Bouquet</button>
+					<button type="button" id="submitOrderBtn" class="btn btn-success btn-lg w-100 shadow-sm fw-bold">Order This Bouquet</button>
 				</div>
 
 				<div id="hiddenFields"></div>
@@ -69,11 +72,61 @@
 	</div>
 </div>
 
+<div class="modal fade" id="loginReminderModal" tabindex="-1" aria-hidden="true" dir="rtl">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+			<div class="modal-body text-center p-5">
+				<span style="font-size: 4rem; display: block; margin-bottom: 15px;">🌸</span>
+				<h3 class="mb-3 fw-bold" style="color: #d63384; font-family: 'Segoe UI', system-ui;">אופס! שכחת להתחבר...</h3>
+				<p class="text-muted fs-6">כדי שנוכל לשמור את הזר שעיצבת ולהתקדם להזמנה, יש להיכנס קודם לחשבון.</p>
+
+				<div class="mt-4 d-grid gap-2">
+					<a asp-controller="Customers" asp-action="Login" class="btn py-2 text-white fw-bold shadow-sm" style="background: linear-gradient(45deg, #ff9a9e 0%, #fecfef 100%); border: none; border-radius: 25px; font-size: 1.1rem;">
+						התחברות עכשיו 🔑
+					</a>
+					<button type="button" class="btn btn-link text-muted mt-2 small" data-bs-dismiss="modal" style="text-decoration: none;">המשך לשפר את העיצוב</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="modal fade" id="shippingDetailsModal" tabindex="-1" aria-hidden="true" dir="rtl">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+			<div class="modal-body p-4 text-start">
+				<div class="text-center mb-3">
+					<span style="font-size: 3rem;">🚚</span>
+					<h4 class="fw-bold mt-2" style="color: #2b4a36;">לאן לשלוח את הזר?</h4>
+					<p class="text-muted small">אנא מלאי פרטי משלוח כדי שנוכל להעביר את הזר למנהל</p>
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label fw-bold text-secondary">כתובת מלאה למשלוח</label>
+					<input type="text" id="modalAddress" class="form-control border-2" placeholder="לדוגמה: הרצל 15, תל אביב, דירה 4" required />
+				</div>
+
+				<div class="mb-4">
+					<label class="form-label fw-bold text-secondary">מספר טלפון ליצירת קשר</label>
+					<input type="tel" id="modalPhone" class="form-control border-2" placeholder="לדוגמה: 0501234567" required />
+				</div>
+
+				<div class="d-grid gap-2">
+					<button type="button" id="confirmShippingBtn" class="btn py-2 text-white fw-bold shadow-sm" style="background-color: #2b4a36; border-radius: 25px;">
+						אישור והמשך להזמנה 💐
+					</button>
+					<button type="button" class="btn btn-link text-muted btn-sm text-center" data-bs-dismiss="modal" style="text-decoration: none;">ביטול</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
 @section Scripts {
 	<script>
 		$(document).ready(function () {
 
-			// === 1. טעינת טיוטה קיימת מהדפדפן (למשל כשחוזרים אחורה) ===
+			// === 1. טעינת טיוטה קיימת מהדפדפן ===
 			var savedDraft = localStorage.getItem('bouquet_draft');
 			if (savedDraft) {
 				try {
@@ -89,10 +142,8 @@
 				}
 			}
 
-			// הרצה ראשונית כדי לצייר את הזר מיד אם שוחזרה טיוטה
 			updateBouquet();
 
-			// שמירת טיוטה גם בעת שינוי שם הזר
 			$('#Name').on('input', function() {
 				saveCurrentDraft();
 			});
@@ -111,19 +162,44 @@
 				}
 			});
 
-			$('#bouquetForm').on('submit', function() {
+			// לחיצה על כפתור ההזמנה הראשי
+			$('#submitOrderBtn').on('click', function(e) {
+				var customerName = '@Context.Session.GetString("CustomerName")';
+				var isAdmin = '@Context.Session.GetString("IsAdmin")';
+
+				if (customerName !== '' || isAdmin === 'true') {
+					var shippingModal = new bootstrap.Modal(document.getElementById('shippingDetailsModal'));
+					shippingModal.show();
+				} else {
+					var loginModal = new bootstrap.Modal(document.getElementById('loginReminderModal'));
+					loginModal.show();
+				}
+			});
+
+			// לחיצה על כפתור האישור הסופי בתוך מודאל המשלוח
+			$('#confirmShippingBtn').on('click', function() {
+				var address = $('#modalAddress').val().trim();
+				var phone = $('#modalPhone').val().trim();
+
+				if (address === '' || phone === '') {
+					alert('אנא מלאי את כל שדות החובה למשלוח.');
+					return;
+				}
+
+				$('#hiddenAddress').val(address);
+				$('#hiddenPhone').val(phone);
+
 				const canvas = $('#bouquetCanvas');
 				const canvasClone = canvas.clone();
 				canvasClone.find('#placeholderText').remove();
-
 				const w = canvas.width();
 				const h = canvas.height();
-
 				const finalHtml = `<div style="position:relative; width:${w}px; height:${h}px; background:#080808; overflow:hidden;">${canvasClone.html()}</div>`;
 				$('#designHtmlInput').val(finalHtml);
+
+				$('#bouquetForm').submit();
 			});
 
-			// === 2. פונקציה פנימית לשמירת המצב הנוכחי של הזר ===
 			function saveCurrentDraft() {
 				var draft = {
 					name: $('#Name').val(),
@@ -168,8 +244,6 @@
 				});
 
 				totalPriceDisplay.val(runningTotal.toFixed(2));
-
-				// קריאה לשמירת הטיוטה בכל פעם שהזר משתנה
 				saveCurrentDraft();
 
 				if (allFlowers.length > 0) {
@@ -177,14 +251,12 @@
 
 					var canvasWidth = canvas.width();
 					var canvasHeight = canvas.height();
-
 					var ribbonX = canvasWidth / 2;
 					var ribbonY = canvasHeight - 180;
 
 					allFlowers.forEach(function(flower, index) {
 						var angleDeg = (Math.random() * 100) - 50;
 						var angleRad = angleDeg * Math.PI / 180;
-
 						var minRadius = 140;
 						var maxRadius = 200 + (allFlowers.length * 2);
 						var radius = minRadius + Math.random() * (maxRadius - minRadius);

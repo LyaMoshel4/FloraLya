@@ -40,7 +40,12 @@
                     <div class="row">
                         <div class="col-md-12 mb-3">
                             <label class="form-label fw-bold">שם בעל הכרטיס</label>
-                            <input type="text" class="form-control border-2 shadow-sm py-2" placeholder="ישראל ישראלי" required>
+                            <input type="text"
+                                   class="form-control border-2 shadow-sm py-2"
+                                   placeholder="ישראל ישראלי"
+                                   required
+                                   pattern="^[a-zA-Zא-ת\s]+$"
+                                   title="נא להזין אותיות בלבד (בעברית או באנגלית)">
                         </div>
                     </div>
                     <div class="row">
@@ -48,18 +53,36 @@
                             <label class="form-label fw-bold">מספר כרטיס</label>
                             <div class="input-group shadow-sm">
                                 <span class="input-group-text bg-white border-2 border-end-0">💳</span>
-                                <input type="text" class="form-control border-2 border-start-0 py-2" placeholder="**** **** **** ****" required>
+                                <input type="tel"
+                                       class="form-control border-2 border-start-0 py-2"
+                                       placeholder="**** **** **** ****"
+                                       required
+                                       pattern="[0-9]{16,19}"
+                                       maxlength="19"
+                                       title="נא להזין מספר כרטיס אשראי תקין (16 עד 19 ספרות בלבד)">
                             </div>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">תוקף</label>
-                            <input type="text" class="form-control border-2 shadow-sm py-2" placeholder="MM/YY" required>
+                            <input type="text"
+                                   class="form-control border-2 shadow-sm py-2"
+                                   placeholder="MM/YY"
+                                   required
+                                   pattern="(0[1-9]|1[0-2])\/[0-9]{2}"
+                                   maxlength="5"
+                                   title="נא להזין תוקף בפורמט חודש ושנה, לדוגמה: 12/26">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">CVV</label>
-                            <input type="text" class="form-control border-2 shadow-sm py-2" placeholder="3 ספרות בגב הכרטיס" required>
+                            <input type="tel"
+                                   class="form-control border-2 shadow-sm py-2"
+                                   placeholder="3 ספרות בגב הכרטיס"
+                                   required
+                                   pattern="[0-9]{3,4}"
+                                   maxlength="4"
+                                   title="נא להזין 3 או 4 ספרות בלבד">
                         </div>
                     </div>
 

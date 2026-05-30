@@ -50,6 +50,20 @@
                 background-color: #b89a6c !important;
                 transform: translateY(-2px);
             }
+
+        .btn-login-nav {
+            border: 2px solid #2b4a36;
+            border-radius: 50px;
+            padding: 5px 20px !important;
+            color: #2b4a36 !important;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+            .btn-login-nav:hover {
+                background-color: #2b4a36 !important;
+                color: white !important;
+            }
     </style>
     @await RenderSectionAsync("Styles", required: false)
 </head>
@@ -62,6 +76,12 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+
+                    @{
+                        var isAdmin = HttpContextAccessor.HttpContext.Session.GetString("IsAdmin") == "true";
+                        var customerName = HttpContextAccessor.HttpContext.Session.GetString("CustomerName");
+                    }
+
                     <ul class="navbar-nav">
                         <li class="nav-item">
                             <a class="nav-link" asp-controller="Home" asp-action="Index">דף הבית</a>
@@ -70,12 +90,7 @@
                             <a class="nav-link btn-create-nav" asp-controller="Bouquets" asp-action="Create">✨ עצב זר אישי</a>
                         </li>
 
-                        @{
-                            var isAdmin = HttpContextAccessor.HttpContext.Session.GetString("IsAdmin") == "true";
-                            var customerName = HttpContextAccessor.HttpContext.Session.GetString("CustomerName");
-                        }
-
-                        @* הכפתור יופיע רק אם המשתמש הוא באמת מנהל *@
+                        @* לינק הניהול יופיע אוטומטית רק אם המחובר הוא מנהל *@
                         @if (isAdmin)
                         {
                             <li class="nav-item">
@@ -84,21 +99,30 @@
                         }
                     </ul>
 
-                    <ul class="navbar-nav">
-                        @if (!string.IsNullOrEmpty(customerName))
+                    <ul class="navbar-nav me-auto">
+                        @if (isAdmin)
                         {
-                            <li class="nav-item"><span class="nav-link">שלום, <b>@customerName</b> ✨</span></li>
-                            <li class="nav-item"><a class="nav-link text-danger" asp-controller="Customers" asp-action="Logout">יציאה</a></li>
+                            <li class="nav-item d-flex align-items-center">
+                                <span class="badge bg-danger px-3 py-2 rounded-pill me-2">👑 מחובר כמנהל</span>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-danger fw-bold" asp-controller="Admin" asp-action="Logout">יציאה</a>
+                            </li>
                         }
-                        else if (isAdmin)
+                        else if (!string.IsNullOrEmpty(customerName))
                         {
-                            <li class="nav-item"><span class="nav-link text-danger fw-bold">מחובר כמנהל</span></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Logout">יציאה</a></li>
+                            <li class="nav-item d-flex align-items-center">
+                                <span class="nav-link">שלום, <b>@customerName</b> ✨</span>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-danger" asp-controller="Customers" asp-action="Logout">יציאה</a>
+                            </li>
                         }
                         else
                         {
-                            <li class="nav-item"><a class="nav-link" asp-controller="Customers" asp-action="Login">התחברות</a></li>
-                            <li class="nav-item"><a class="nav-link text-muted" style="font-size:0.7rem; padding-top:14px;" asp-controller="Admin" asp-action="Login">מנהל</a></li>
+                            <li class="nav-item">
+                                <a class="nav-link btn-login-nav" asp-controller="Customers" asp-action="Login">🔑 התחברות</a>
+                            </li>
                         }
                     </ul>
                 </div>

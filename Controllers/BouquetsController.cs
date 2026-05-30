@@ -4,6 +4,9 @@ using LyaShop.Data;
 using LyaShop.Models;
 using Microsoft.AspNetCore.Http;
 using System.Text.Json;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace LyaShop.Controllers
 {
@@ -35,10 +38,10 @@ namespace LyaShop.Controllers
             return View();
         }
 
-        // 3. שמירת הזר
+        // 3. שמירת הזר (למשתמשים רשומים / מנהל)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Bouquet bouquet, int[] selectedFlowers)
+        public async Task<IActionResult> Create(Bouquet bouquet, int[] selectedFlowers, string shippingAddress, string customerPhone)
         {
             HttpContext.Session.SetString("TempBouquetName", bouquet.Name ?? "זר בעיצוב אישי");
             HttpContext.Session.SetString("TempBouquetPrice", bouquet.Price.ToString());
@@ -47,13 +50,19 @@ namespace LyaShop.Controllers
             if (selectedFlowers != null)
                 HttpContext.Session.SetString("TempSelectedFlowers", JsonSerializer.Serialize(selectedFlowers));
 
-            if (string.IsNullOrEmpty(HttpContext.Session.GetString("CustomerName")))
+            // אם המשתמש לא מחובר, נפנה אותו לדף פרטי אורח
+            if (string.IsNullOrEmpty(HttpContext.Session.GetString("CustomerName")) && HttpContext.Session.GetString("IsAdmin") != "true")
             {
                 return RedirectToAction("GuestDetails");
             }
 
             if (ModelState.IsValid)
             {
+                // עדכון השדות החדשים עבור הזר הנוכחי
+                bouquet.ShippingAddress = shippingAddress;
+                bouquet.CustomerPhone = customerPhone;
+                bouquet.CreatedAt = DateTime.Now;
+
                 _context.Add(bouquet);
                 await _context.SaveChangesAsync();
 
@@ -73,7 +82,7 @@ namespace LyaShop.Controllers
             return View(bouquet);
         }
 
-        // --- הוספתי את עריכת הזר ---
+        // --- עריכת הזר ---
         [HttpGet]
         public async Task<IActionResult> Edit(int? id)
         {
@@ -97,6 +106,15 @@ namespace LyaShop.Controllers
             {
                 try
                 {
+                    // שומרים על תאריך היצירה המקורי בעת עריכה (אם קיים)
+                    var existingBouquet = await _context.Bouquet.AsNoTracking().FirstOrDefaultAsync(b => b.Id == id);
+                    if (existingBouquet != null)
+                    {
+                        bouquet.CreatedAt = existingBouquet.CreatedAt;
+                        if (string.IsNullOrEmpty(bouquet.ShippingAddress)) bouquet.ShippingAddress = existingBouquet.ShippingAddress;
+                        if (string.IsNullOrEmpty(bouquet.CustomerPhone)) bouquet.CustomerPhone = existingBouquet.CustomerPhone;
+                    }
+
                     _context.Update(bouquet);
                     await _context.SaveChangesAsync();
                 }
@@ -111,7 +129,7 @@ namespace LyaShop.Controllers
             return View(bouquet);
         }
 
-        // --- הוספתי את מחיקת הזר ---
+        // --- מחיקת הזר ---
         [HttpGet]
         public async Task<IActionResult> Delete(int? id)
         {
@@ -168,11 +186,15 @@ namespace LyaShop.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SaveGuestOrder(string guestName, string guestPhone, string guestAddress)
         {
+            // יצירת הזר עם הפרטים שהאורח מילא בטופס הפרטים שלו
             var bouquet = new Bouquet
             {
                 Name = (HttpContext.Session.GetString("TempBouquetName") ?? "זר") + " (אורח: " + guestName + ")",
                 Price = decimal.TryParse(HttpContext.Session.GetString("TempBouquetPrice"), out decimal p) ? p : 0,
-                BouquetDesignHtml = HttpContext.Session.GetString("TempBouquetHtml")
+                BouquetDesignHtml = HttpContext.Session.GetString("TempBouquetHtml"),
+                ShippingAddress = guestAddress, // שמירת הכתובת של האורח
+                CustomerPhone = guestPhone,     // שמירת הטלפון של האורח
+                CreatedAt = DateTime.Now        // שעת היצירה המדויקת של האורח
             };
 
             _context.Add(bouquet);

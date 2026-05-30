@@ -93,22 +93,22 @@
 
         <form asp-action="Login" method="post">
             <div class="mb-3 text-start">
-                <label class="form-label fw-bold text-secondary">שם מלא</label>
-                <input type="text" name="customerName" class="form-control" placeholder="לדוגמה: ליאה כהן" required />
+                <label class="form-label fw-bold text-secondary">שם מלא / אימייל מנהל</label>
+                <input type="text" name="customerName" class="form-control" placeholder="לדוגמה: ליאה כהן או אימייל מנהל" required />
             </div>
 
             <div class="mb-3 text-start">
-                <label class="form-label fw-bold text-secondary">תעודת זהות</label>
-                <input type="text" name="customerID" class="form-control" placeholder="לדוגמה: 123456789" required />
+                <label class="form-label fw-bold text-secondary">תעודת זהות / סיסמת מנהל</label>
+                <input type="password" name="customerID" class="form-control" placeholder="לדוגמה: 123456789 או סיסמה" required />
             </div>
 
             <button type="submit" class="btn btn-pink">כניסה לחנות 💐</button>
         </form>
 
         <div class="mt-4">
-            <a asp-controller="Admin" asp-action="Login" class="text-muted small" style="text-decoration: none;">
-                ניהול מערכת (למנהלים בלבד)
-            </a>
+            <span class="text-muted small">
+                💡 מנהל מערכת? כנס עם הפרטים שלך ישירות בטופס למעלה.
+            </span>
         </div>
     </div>
 </div>
