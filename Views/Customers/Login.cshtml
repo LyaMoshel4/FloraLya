@@ -78,7 +78,7 @@
 
 <div class="overlay"></div>
 
-<div class="container">
+<div class="container" dir="rtl">
     <div class="login-card">
         <span class="icon-flower">🌸</span>
         <h2 class="login-header">Welcome to LyaShop</h2>
@@ -93,13 +93,13 @@
 
         <form asp-action="Login" method="post">
             <div class="mb-3 text-start">
-                <label class="form-label fw-bold text-secondary">שם מלא / אימייל מנהל</label>
-                <input type="text" name="customerName" class="form-control" placeholder="לדוגמה: ליאה כהן או אימייל מנהל" required />
+                <label class="form-label fw-bold text-secondary">שם מלא</label>
+                <input type="text" name="customerName" class="form-control" placeholder="לדוגמה: ליאה כהן" required />
             </div>
 
             <div class="mb-3 text-start">
-                <label class="form-label fw-bold text-secondary">תעודת זהות / סיסמת מנהל</label>
-                <input type="password" name="customerID" class="form-control" placeholder="לדוגמה: 123456789 או סיסמה" required />
+                <label class="form-label fw-bold text-secondary">תעודת זהות</label>
+                <input type="password" name="customerID" class="form-control" placeholder="לדוגמה: 123456789" required />
             </div>
 
             <button type="submit" class="btn btn-pink">כניסה לחנות 💐</button>

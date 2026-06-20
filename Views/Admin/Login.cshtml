@@ -2,11 +2,11 @@
     ViewData["Title"] = "Admin Login";
 }
 
-<div class="d-flex justify-content-center align-items-center" style="height: 70vh;">
+<div class="d-flex justify-content-center align-items-center" style="height: 70vh;" dir="rtl">
     <div class="card shadow-lg border-0 p-4" style="width: 400px; border-radius: 15px;">
         <div class="text-center mb-4">
             <h2 class="fw-bold text-dark">LyaShop Admin</h2>
-            <p class="text-muted">Please enter your credentials</p>
+            <p class="text-muted">הכנס פרטים כדי להיכנס למערכת הניהול</p>
         </div>
 
         @if (ViewBag.Error != null)
@@ -16,14 +16,14 @@
 
         <form asp-action="Login" method="post">
             <div class="mb-3">
-                <label class="form-label fw-bold">Email</label>
-                <input type="email" name="email" class="form-control" placeholder="admin@lyashop.com" required />
+                <label class="form-label fw-bold">שם מלא</label>
+                <input type="text" name="email" class="form-control" placeholder="לדוגמה: ליאה כהן" required />
             </div>
             <div class="mb-4">
-                <label class="form-label fw-bold">Password</label>
-                <input type="password" name="password" class="form-control" placeholder="******" required />
+                <label class="form-label fw-bold">תעודת זהות</label>
+                <input type="password" name="password" class="form-control" placeholder="לדוגמה: 123456789" required />
             </div>
-            <button type="submit" class="btn btn-dark w-100 py-2 fw-bold" style="border-radius: 10px;">Login</button>
+            <button type="submit" class="btn btn-dark w-100 py-2 fw-bold" style="border-radius: 10px;">כניסה לחנות 🛍️</button>
         </form>
     </div>
 </div>
