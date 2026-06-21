@@ -38,19 +38,23 @@
             margin: 0 10px;
         }
 
-        .btn-create-nav {
+        /* סגנון כפתור הרשמה מלא (מבוסס על העיצוב המקורי של המותג) */
+        .btn-register-nav {
             background-color: #2b4a36 !important;
             color: white !important;
             border-radius: 50px;
-            padding: 6px 20px;
+            padding: 5px 20px !important;
+            font-weight: 600;
             transition: all 0.3s ease;
         }
 
-            .btn-create-nav:hover {
+            .btn-register-nav:hover {
                 background-color: #b89a6c !important;
                 transform: translateY(-2px);
+                color: white !important;
             }
 
+        /* סגנון כפתור התחברות עם מסגרת */
         .btn-login-nav {
             border: 2px solid #2b4a36;
             border-radius: 50px;
@@ -86,9 +90,6 @@
                         <li class="nav-item">
                             <a class="nav-link" asp-controller="Home" asp-action="Index">דף הבית</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link btn-create-nav" asp-controller="Bouquets" asp-action="Create">✨ עצב זר אישי</a>
-                        </li>
 
                         @* לינק הניהול יופיע אוטומטית רק אם המחובר הוא מנהל *@
                         @if (isAdmin)
@@ -99,7 +100,7 @@
                         }
                     </ul>
 
-                    <ul class="navbar-nav me-auto">
+                    <ul class="navbar-nav me-auto align-items-center">
                         @if (isAdmin)
                         {
                             <li class="nav-item d-flex align-items-center">
@@ -114,14 +115,24 @@
                             <li class="nav-item d-flex align-items-center">
                                 <span class="nav-link">שלום, <b>@customerName</b> ✨</span>
                             </li>
+
+                            @* ✨ כפתור הפרופיל החדש – מופיע רק כאן ומעוצב לפי צבעי האתר *@
+                            <li class="nav-item">
+                                <a class="nav-link fw-bold" style="color: #2b4a36 !important;" asp-controller="Customers" asp-action="Profile">👤 הפרופיל שלי</a>
+                            </li>
+
                             <li class="nav-item">
                                 <a class="nav-link text-danger" asp-controller="Customers" asp-action="Logout">יציאה</a>
                             </li>
                         }
                         else
                         {
-                            <li class="nav-item">
+                            @* הפנייה נפרדת לכל כפתור לעמוד שלו *@
+                            <li class="nav-item me-2">
                                 <a class="nav-link btn-login-nav" asp-controller="Customers" asp-action="Login">🔑 התחברות</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link btn-register-nav" asp-controller="Customers" asp-action="Register">📝 הרשמה</a>
                             </li>
                         }
                     </ul>

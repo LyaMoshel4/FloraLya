@@ -19,13 +19,33 @@ namespace LyaShop.Controllers
             _context = context;
         }
 
-        // 1. דף ניהול - רק מנהל רואה את רשימת כל הזרים
+        // 1. דף ניהול - רק מנהל רואה את רשימת כל הזרים + ניקוי אוטומטי של זרים מקולקלים
         public async Task<IActionResult> Index()
         {
             var isAdmin = HttpContext.Session.GetString("IsAdmin") == "true";
 
             if (!isAdmin)
                 return RedirectToAction("Index", "Home");
+
+            // --- תחילת מנגנון ניקוי אוטומטי לזרים הישנים ---
+            var oldBouquets = _context.Bouquet
+                .Where(b => b.BouquetDesignHtml == null || !b.BouquetDesignHtml.Contains("bouquet-saved-canvas"))
+                .ToList();
+
+            if (oldBouquets.Any())
+            {
+                // מחיקת קשרי הפרחים של הזרים הישנים כדי למנוע שגיאות מפתח זר
+                foreach (var oldBouquet in oldBouquets)
+                {
+                    var relationItems = _context.FlowerInBouquet.Where(f => f.BouquetId == oldBouquet.Id);
+                    _context.FlowerInBouquet.RemoveRange(relationItems);
+                }
+
+                // מחיקת הזרים עצמם
+                _context.Bouquet.RemoveRange(oldBouquets);
+                await _context.SaveChangesAsync();
+            }
+            // --- סוף מנגנון הניקוי ---
 
             return View(await _context.Bouquet.ToListAsync());
         }
@@ -58,6 +78,13 @@ namespace LyaShop.Controllers
 
             if (ModelState.IsValid)
             {
+                // הוספת שם הלקוח המחובר לשם הזר כדי שהמנהל יראה מי עיצב אותו
+                var customerName = HttpContext.Session.GetString("CustomerName");
+                if (!string.IsNullOrEmpty(customerName))
+                {
+                    bouquet.Name = (bouquet.Name ?? "זר בעיצוב אישי") + " (לקוח: " + customerName + ")";
+                }
+
                 // עדכון השדות החדשים עבור הזר הנוכחי
                 bouquet.ShippingAddress = shippingAddress;
                 bouquet.CustomerPhone = customerPhone;
@@ -82,53 +109,6 @@ namespace LyaShop.Controllers
             return View(bouquet);
         }
 
-        // --- עריכת הזר ---
-        [HttpGet]
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null) return NotFound();
-
-            var bouquet = await _context.Bouquet.FindAsync(id);
-            if (bouquet == null) return NotFound();
-
-            // טעינת הפרחים כדי שיופיעו בתפריט הצד של המעצב
-            ViewBag.Flowers = await _context.Flower.ToListAsync();
-            return View(bouquet);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Bouquet bouquet)
-        {
-            if (id != bouquet.Id) return NotFound();
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    // שומרים על תאריך היצירה המקורי בעת עריכה (אם קיים)
-                    var existingBouquet = await _context.Bouquet.AsNoTracking().FirstOrDefaultAsync(b => b.Id == id);
-                    if (existingBouquet != null)
-                    {
-                        bouquet.CreatedAt = existingBouquet.CreatedAt;
-                        if (string.IsNullOrEmpty(bouquet.ShippingAddress)) bouquet.ShippingAddress = existingBouquet.ShippingAddress;
-                        if (string.IsNullOrEmpty(bouquet.CustomerPhone)) bouquet.CustomerPhone = existingBouquet.CustomerPhone;
-                    }
-
-                    _context.Update(bouquet);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!BouquetExists(bouquet.Id)) return NotFound();
-                    else throw;
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            ViewBag.Flowers = await _context.Flower.ToListAsync();
-            return View(bouquet);
-        }
-
         // --- מחיקת הזר ---
         [HttpGet]
         public async Task<IActionResult> Delete(int? id)
@@ -148,7 +128,6 @@ namespace LyaShop.Controllers
             var bouquet = await _context.Bouquet.FindAsync(id);
             if (bouquet != null)
             {
-                // מחיקת הפרחים המקושרים לזר קודם (כדי למנוע שגיאת Foreign Key)
                 var flowersInBouquet = _context.FlowerInBouquet.Where(f => f.BouquetId == id);
                 _context.FlowerInBouquet.RemoveRange(flowersInBouquet);
 
@@ -186,15 +165,14 @@ namespace LyaShop.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SaveGuestOrder(string guestName, string guestPhone, string guestAddress)
         {
-            // יצירת הזר עם הפרטים שהאורח מילא בטופס הפרטים שלו
             var bouquet = new Bouquet
             {
                 Name = (HttpContext.Session.GetString("TempBouquetName") ?? "זר") + " (אורח: " + guestName + ")",
                 Price = decimal.TryParse(HttpContext.Session.GetString("TempBouquetPrice"), out decimal p) ? p : 0,
                 BouquetDesignHtml = HttpContext.Session.GetString("TempBouquetHtml"),
-                ShippingAddress = guestAddress, // שמירת הכתובת של האורח
-                CustomerPhone = guestPhone,     // שמירת הטלפון של האורח
-                CreatedAt = DateTime.Now        // שעת היצירה המדויקת של האורח
+                ShippingAddress = guestAddress,
+                CustomerPhone = guestPhone,
+                CreatedAt = DateTime.Now
             };
 
             _context.Add(bouquet);
@@ -214,10 +192,38 @@ namespace LyaShop.Controllers
             return RedirectToAction("Checkout", new { id = bouquet.Id });
         }
 
-        // 6. דף אישור סופי
+        // 6. דף אישור סופי + שמירה אוטומטית לטבלת Orders של הלקוח הרשום
         [HttpGet]
-        public IActionResult OrderConfirmation(int id)
+        public async Task<IActionResult> OrderConfirmation(int id)
         {
+            var customerId = HttpContext.Session.GetString("CustomerID");
+
+            if (!string.IsNullOrEmpty(customerId))
+            {
+                var bouquet = await _context.Bouquet.FindAsync(id);
+                if (bouquet != null && _context.Orders != null)
+                {
+                    // מניעת כפילויות בריפרש
+                    var orderExists = await _context.Orders.AnyAsync(o => o.CustomerId == customerId && o.OrderDate > DateTime.Now.AddMinutes(-2));
+
+                    if (!orderExists)
+                    {
+                        var newOrder = new Order
+                        {
+                            CustomerId = customerId,
+                            OrderDate = DateTime.Now,
+                            TotalPrice = (double)bouquet.Price, // המרה מ-decimal ל-double בהתאם למודל שלך
+                            Status = "בטיפול",
+                            ItemsSummary = bouquet.Name
+                        };
+
+                        _context.Orders.Add(newOrder);
+                        await _context.SaveChangesAsync();
+                    }
+                }
+            }
+
+            // ניקוי סשן זמני
             HttpContext.Session.Remove("TempBouquetName");
             HttpContext.Session.Remove("TempBouquetPrice");
             HttpContext.Session.Remove("TempBouquetHtml");

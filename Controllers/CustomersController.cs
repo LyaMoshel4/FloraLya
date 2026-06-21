@@ -1,19 +1,32 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using LyaShop.Data;
+using LyaShop.Models;
 using Microsoft.AspNetCore.Http;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace LyaShop.Controllers
 {
     public class CustomersController : Controller
     {
-        // 1. דף הכניסה (Login) - תצוגה
+        private readonly LyaFlowerShopContext _context;
+
+        public CustomersController(LyaFlowerShopContext context)
+        {
+            _context = context;
+        }
+
+        // ==========================================
+        // 1. מסך התחברות (Login)
+        // ==========================================
         public IActionResult Login()
         {
             return View();
         }
 
-        // 2. קבלת הנתונים מהטופס ושמירה ב-Session (מאוחד למשתמש ומנהל)
         [HttpPost]
-        public IActionResult Login(string customerName, string customerID)
+        public IActionResult Login(string? customerName, string? customerID)
         {
             if (string.IsNullOrWhiteSpace(customerName) || string.IsNullOrWhiteSpace(customerID))
             {
@@ -21,31 +34,105 @@ namespace LyaShop.Controllers
                 return View();
             }
 
-            // בדיקה: האם מדובר במנהל המערכת?
-            // (תוכלי לשנות את admin@lyashop.com והסיסמה למה שתרצי)
             if (customerName == "admin@lyashop.com" && customerID == "MySecretPassword123")
             {
-                // הגדרת ה-Session בדיוק כפי שהלייאאוט החדש מצפה לו עבור מנהל
                 HttpContext.Session.SetString("IsAdmin", "true");
-                HttpContext.Session.Remove("CustomerName"); // ניקוי שם לקוח ליתר ביטחון
-
-                // הפניה לדף הניהול הראשי של המנהל
+                HttpContext.Session.Remove("CustomerName");
                 return RedirectToAction("Dashboard", "Admin");
             }
 
-            // במידה וזה לא המנהל - הוא נרשם כלקוח רגיל עם הפרטים שהקליד
-            HttpContext.Session.SetString("CustomerName", customerName);
-            HttpContext.Session.SetString("CustomerID", customerID);
-            HttpContext.Session.SetString("IsAdmin", "false"); // מוודא שהוא לא נחשב מנהל
+            // החזרה ל-Customers המקורי והתקין של המודל
+            var existingCustomer = _context.Customers != null
+                ? _context.Customers.FirstOrDefault(c => c.Id == customerID)
+                : null;
 
-            // הפניה לדף הבית אחרי התחברות מוצלחת
+            if (existingCustomer != null)
+            {
+                HttpContext.Session.SetString("CustomerName", existingCustomer.Name ?? "");
+                HttpContext.Session.SetString("CustomerID", existingCustomer.Id ?? "");
+                HttpContext.Session.SetString("IsAdmin", "false");
+
+                return RedirectToAction("Index", "Home");
+            }
+
+            ViewBag.Error = "שגיאה: משתמש זה אינו רשום במערכת. אנא לחצי על לחצן 'הרשמה' למעלה כדי להירשם לראשונה.";
+            return View();
+        }
+
+        // ==========================================
+        // 2. מסך הרשמה (Register)
+        // ==========================================
+        public IActionResult Register()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public IActionResult Register(string? customerName, string? customerID)
+        {
+            if (string.IsNullOrWhiteSpace(customerName) || string.IsNullOrWhiteSpace(customerID))
+            {
+                ViewBag.Error = "אנא הכנס שם ותעודת זהות תקינים לצורך הרשמה.";
+                return View();
+            }
+
+            if (_context.Customers == null)
+            {
+                ViewBag.Error = "שגיאה בחיבור לבסיס הנתונים.";
+                return View();
+            }
+
+            var checkExists = _context.Customers.FirstOrDefault(c => c.Id == customerID);
+            if (checkExists != null)
+            {
+                ViewBag.Error = "תעודת זהות זו כבר רשומה במערכת. הנך מועבר למסך התחברות.";
+                return View("Login");
+            }
+
+            var newCustomer = new Customer
+            {
+                Id = customerID,
+                Name = customerName
+            };
+
+            _context.Customers.Add(newCustomer);
+            _context.SaveChanges();
+
+            // הוסר הסימן המיותר ששיגע את הקומפיילר
+            HttpContext.Session.SetString("CustomerName", newCustomer.Name ?? "");
+            HttpContext.Session.SetString("CustomerID", newCustomer.Id ?? "");
+            HttpContext.Session.SetString("IsAdmin", "false");
+
             return RedirectToAction("Index", "Home");
         }
 
-        // 3. יציאה מהמערכת (Logout)
+        // ==========================================
+        //  פרופיל לקוח והיסטוריית הזמנות
+        // ==========================================
+        public IActionResult Profile()
+        {
+            var customerId = HttpContext.Session.GetString("CustomerID");
+
+            if (string.IsNullOrEmpty(customerId))
+            {
+                return RedirectToAction("Login");
+            }
+
+            ViewBag.CustomerName = HttpContext.Session.GetString("CustomerName");
+
+            var customerOrders = _context.Orders != null
+                ? _context.Orders.Where(o => o.CustomerId == customerId).OrderByDescending(o => o.OrderDate).ToList()
+                : new List<Order>();
+
+            return View(customerOrders);
+        }
+
+        // ==========================================
+        //  יציאה מהמערכת (Logout)
+        // ==========================================
         public IActionResult Logout()
         {
-            HttpContext.Session.Clear(); // מוחק את כל נתוני המשתמש והמנהל מהזיכרון
+            HttpContext.Session.Clear();
             return RedirectToAction("Index", "Home");
         }
     }

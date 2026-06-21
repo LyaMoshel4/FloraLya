@@ -4,6 +4,7 @@ using LyaShop.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LyaShop.Migrations
 {
     [DbContext(typeof(LyaFlowerShopContext))]
-    partial class LyaFlowerShopContextModelSnapshot : ModelSnapshot
+    [Migration("20260621122250_AddCustomersTable")]
+    partial class AddCustomersTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -135,39 +138,6 @@ namespace LyaShop.Migrations
                     b.ToTable("FlowerInBouquet");
                 });
 
-            modelBuilder.Entity("LyaShop.Models.Order", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("CustomerId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("ItemsSummary")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("OrderDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<double>("TotalPrice")
-                        .HasColumnType("float");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CustomerId");
-
-                    b.ToTable("Orders");
-                });
-
             modelBuilder.Entity("LyaShop.Models.FlowerInBouquet", b =>
                 {
                     b.HasOne("LyaShop.Models.Bouquet", "Bouquet")
@@ -185,17 +155,6 @@ namespace LyaShop.Migrations
                     b.Navigation("Bouquet");
 
                     b.Navigation("Flower");
-                });
-
-            modelBuilder.Entity("LyaShop.Models.Order", b =>
-                {
-                    b.HasOne("LyaShop.Models.Customer", "Customer")
-                        .WithMany()
-                        .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Customer");
                 });
 #pragma warning restore 612, 618
         }

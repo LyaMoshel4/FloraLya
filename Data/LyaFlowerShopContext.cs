@@ -13,10 +13,13 @@ namespace LyaShop.Data
         public DbSet<Flower> Flower { get; set; }
         public DbSet<Bouquet> Bouquet { get; set; }
         public DbSet<FlowerInBouquet> FlowerInBouquet { get; set; }
+        public DbSet<Customer> Customers { get; set; }
+
+       
+        public DbSet<Order> Orders { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // הגדרת מפתח ראשי לטבלה המקשרת
             modelBuilder.Entity<FlowerInBouquet>()
                 .HasKey(fb => fb.Id);
         }
