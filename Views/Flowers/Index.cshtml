@@ -28,15 +28,12 @@
                         <tr>
                             <td>
                                 @{
-                                    // מנגנון חכם שמזהה אוטומטית אם שדה התמונה שלך נקרא ImageBytes או תחת שם אחר
-                                    var imageProperty = item.GetType().GetProperty("ImageBytes") ?? item.GetType().GetProperty("Image");
-                                    byte[] imgBytes = imageProperty?.GetValue(item) as byte[];
+                                    // נבדוק איזה שדה מכיל את נתיב התמונה (ImageUrl או ImagePath)
+                                    var imgPath = !string.IsNullOrEmpty(item.ImageUrl) ? item.ImageUrl : item.ImagePath;
 
-                                    if (imgBytes != null && imgBytes.Length > 0)
+                                    if (!string.IsNullOrEmpty(imgPath))
                                     {
-                                        var base64 = Convert.ToBase64String(imgBytes);
-                                        var imgSrc = $"data:image/png;base64,{base64}";
-                                        <img src="@imgSrc" class="rounded-3 shadow-sm border" style="width: 60px; height: 60px; object-fit: cover; filter: hue-rotate(@(item.HueRotation)deg);" alt="@item.Name" />
+                                        <img src="@imgPath" class="rounded-3 shadow-sm border" style="width: 60px; height: 60px; object-fit: cover; filter: hue-rotate(@(item.HueRotation)deg);" alt="@item.Name" />
                                     }
                                     else
                                     {
