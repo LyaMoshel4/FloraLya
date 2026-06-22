@@ -208,7 +208,7 @@
                     var controlY = ribbonY - (ribbonY - f.y) * 0.4;
                     var stemWidth = 6 + Math.random() * 2;
                     var stemColor = ['#527a48', '#618a55', '#456b3d'][Math.floor(Math.random()*3)];
-                    svgHtml += `<path d="M ${f.x} ${f.y} Q ${controlX} ${controlY} ${ribbonX} ${ribbonY}" fill="none" stroke="${stemColor}" stroke-width="${stemWidth}" stroke-linecap="round" filter="drop-shadow(2px 2px 4px rgba(0,0,0,0.4))" />`;
+                    svgHtml += `<path d="M ${f.x} ${f.y} Q ${controlX} ${controlY} ${ribbonX} ${ribbonY}" fill="none" stroke="${stemColor}" stroke-width="${stemWidth}" stroke-linecap="round" filter="drop-shadow(2px 2px 4px rgba(0,0,0,0.4))" />`;//הדבקת גבעולים
                 });
 
                 svgHtml += `</svg>`;
@@ -239,7 +239,7 @@
                     imgSrc = imgSrc.replace('/images//images/', '/images/').replace('//', '/');
                     if (!imgSrc.startsWith('/')) imgSrc = '/' + imgSrc;
 
-                    canvas.append(`<img src="${imgSrc}" class="flower-instance" style="${headStyle}">`);
+                    canvas.append(`<img src="${imgSrc}" class="flower-instance" style="${headStyle}">`);//הדבקה של הפרח
                 });
             }
         });

@@ -31,6 +31,7 @@
 								{
 									<div class="list-group-item d-flex justify-content-between align-items-center border-0 bg-light mb-2 rounded">
 										<span>@flower.Name <small class="text-muted">(₪@flower.Price)</small></span>
+
 										<div class="input-group input-group-sm" style="width: 120px;">
 											<button type="button" class="btn btn-outline-secondary btn-minus" data-id="@flower.Id">-</button>
 											<input type="number" name="flower_@flower.Id" class="form-control text-center flower-qty"
@@ -63,7 +64,7 @@
 		<div class="col-md-7">
 			<div class="card shadow-sm h-100 bg-white" style="border: 1px solid #eee; position: relative; overflow: hidden; min-height: 600px;">
 				<div id="bouquetCanvas" class="card-body p-0" style="position: absolute; top:0; left:0; width: 600px; height: 600px; background: #080808;">
-					<div id="placeholderText" class="text-center text-white-50" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000;">
+					<div class="placeholderText" id="placeholderText" class="text-center text-white-50" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000;">
 						<p class="fs-4">Select flowers to start designing!</p>
 					</div>
 				</div>
@@ -126,6 +127,7 @@
 	<script>
 		$(document).ready(function () {
 
+			// טעינת טיוטה שמורה מתוך ה-LocalStorage של הדפדפן כדי למנוע אובדן מידע בריענון עמוד
 			var savedDraft = localStorage.getItem('bouquet_draft');
 			if (savedDraft) {
 				try {
@@ -141,18 +143,22 @@
 				}
 			}
 
+			// רינדור התחלתי של הזר על המסך בהתאם לכמויות הטעונות
 			updateBouquet();
 
+			// אירוע המופעל בכל הקלדת אות בשדה השם לצורך עדכון ושמירת הטיוטה הנוכחית
 			$('#Name').on('input', function() {
 				saveCurrentDraft();
 			});
 
+			// כפתור פלוס קבוצתי: מעלה את כמות הפרח ב-1 ומעדכן את המראה והמחיר
 			$('.btn-plus').click(function () {
 				var input = $(this).siblings('.flower-qty');
 				input.val(parseInt(input.val()) + 1);
 				updateBouquet();
 			});
 
+			// כפתור מינוס קבוצתי: מוריד את כמות הפרח ב-1 (מונע ירידה מתחת ל-0) ומעדכן
 			$('.btn-minus').click(function () {
 				var input = $(this).siblings('.flower-qty');
 				if (parseInt(input.val()) > 0) {
@@ -161,19 +167,21 @@
 				}
 			});
 
+			// טיפול בלחיצה על כפתור ביצוע ההזמנה: בדיקה האם יש סשן מחובר בשרת
 			$('#submitOrderBtn').on('click', function(e) {
 				var customerName = '@Context.Session.GetString("CustomerName")';
 				var isAdmin = '@Context.Session.GetString("IsAdmin")';
 
+				// אם המשתמש מחובר (שם לקוח לא ריק) או שהוא מנהל - נפתח מודל פרטי משלוח
 				if (customerName !== '' || isAdmin === 'true') {
 					var shippingModal = new bootstrap.Modal(document.getElementById('shippingDetailsModal'));
 					shippingModal.show();
 				} else {
-					var loginModal = new bootstrap.Modal(document.getElementById('loginReminderModal'));
-					loginModal.show();
+					// אם לא מחובר - פותח מודל המפנה לדף התחברות ומזכיר להתחבר
 				}
 			});
 
+			// שלב אישור סופי של פרטי המשלוח ושליחת הטופס המלא ל-Back-end
 			$('#confirmShippingBtn').on('click', function() {
 				var address = $('#modalAddress').val().trim();
 				var phone = $('#modalPhone').val().trim();
@@ -183,19 +191,24 @@
 					return;
 				}
 
+				// השמת הערכים לתוך שדות ה-Input הנסתרים של הטופס הראשי
 				$('#hiddenAddress').val(address);
 				$('#hiddenPhone').val(phone);
 
+				// שכפול קנבס הזר והסרת טקסט הפלייסהולדר הריק כדי לייצר מבנה HTML נקי
 				const canvas = $('#bouquetCanvas');
 				const canvasClone = canvas.clone();
 				canvasClone.find('#placeholderText').remove();
 
+				// עטיפת ה-HTML שנוצר בתוך מחרוזת מובנית והשמתה בשדה הטופס של מודל הזר לצורך שמירה במסד הנתונים
 				const finalHtml = `<div class="bouquet-saved-canvas" style="position:relative; width:600px; height:600px; background:#080808; overflow:hidden;">${canvasClone.html()}</div>`;
 				$('#designHtmlInput').val(finalHtml);
 
+				// ביצוע שליחה (Submit) רשמית של הטופס ל-Controller (HTTP POST)
 				$('#bouquetForm').submit();
 			});
 
+			// פונקציה לשמירת נתוני הזר הנוכחיים (שם וכמויות) בפורמט JSON בתוך ה-LocalStorage
 			function saveCurrentDraft() {
 				var draft = {
 					name: $('#Name').val(),
@@ -210,18 +223,21 @@
 				localStorage.setItem('bouquet_draft', JSON.stringify(draft));
 			}
 
+			// לוגיקת הליבה: קריאת כמויות, חישוב מתמטי וציור של הזר, הגבעולים, העלים וראשי הפרחים
 			function updateBouquet() {
 				var canvas = $('#bouquetCanvas');
 				var placeholder = $('#placeholderText');
 				var hiddenFields = $('#hiddenFields');
 				var totalPriceDisplay = $('#totalPrice');
 
+				// ניקוי הקנבס הישן מרינדורים ואיטרציות קודמות כדי למנוע כפילויות
 				canvas.find('.flower-instance, .bouquet-base, #bouquetSvgLayer').remove();
 				hiddenFields.empty();
 
 				var allFlowers = [];
 				var runningTotal = 0;
 
+				// מעבר על כל אינפוט כמות של פרח ואיסוף המידע שנשמר ב-Data Attributes
 				$('.flower-qty').each(function () {
 					var qty = parseInt($(this).val());
 					var id = $(this).data('id');
@@ -231,40 +247,50 @@
 					var hue = $(this).data('hue') || 0;
 
 					if (qty > 0) {
+						// חישוב והוספה למחיר הכולל הרץ
 						runningTotal += (qty * price);
 						for (var i = 0; i < qty; i++) {
 							allFlowers.push({ id: id, name: name, img: img, hue: hue });
+							// הזרקת אינפוט נסתר דינמי לטופס כדי שמערך ה-IDs של הפרחים יעבור בהצלחה לקוד השרת ב-C#
 							hiddenFields.append('<input type="hidden" name="selectedFlowers" value="' + id + '">');
 						}
 					}
 				});
 
+				// עדכון תצוגת שדה המחיר על המסך וביצוע שמירה בטיוטה המקומית
 				totalPriceDisplay.val(runningTotal.toFixed(2));
 				saveCurrentDraft();
 
+				// במידה ויש לפחות פרח אחד שנבחר – מתחילים בתהליך הבנייה והציור של הזר
 				if (allFlowers.length > 0) {
 					placeholder.hide();
 
+					// נקודת העוגן המרכזית על הקנבס (מיקום סרט הקשירה של הזר)
 					var ribbonX = 300;
 					var ribbonY = 440;
 
+					// אלגוריתם פיזור חצי מעגלי (מניפה) המחשב מיקומי X ו-Y אקראיים מבוקרים לכל פרח
 					allFlowers.forEach(function(flower, index) {
-						var angleDeg = (Math.random() * 100) - 50;
-						var angleRad = angleDeg * Math.PI / 180;
+						var angleDeg = (Math.random() * 100) - 50; // טווח זווית בין 50- ל-50 מעלות
+						var angleRad = angleDeg * Math.PI / 180; // המרת מעלות לרדיאנים עבור פונקציות הטריגונומטריה
 						var minRadius = 140;
-						var maxRadius = 200 + (allFlowers.length * 2);
+						var maxRadius = 200 + (allFlowers.length * 2); // הרחבת רדיוס מקסימלי ככל שיש יותר פרחים בזר
 						var radius = minRadius + Math.random() * (maxRadius - minRadius);
 
+						// מציאת קואורדינטות המיקום של ראש הפרח על הקנבס באמצעות סינוס וקוסינוס
 						flower.x = ribbonX + Math.sin(angleRad) * radius;
 						flower.y = ribbonY - Math.cos(angleRad) * radius;
-						flower.zIndex = Math.round(flower.y);
+						flower.zIndex = Math.round(flower.y); // שימוש בגובה ה-Y כמדד עומק (Z-Index): פרח נמוך יותר יסתיר פרח גבוה יותר
 						flower.angle = angleDeg;
 					});
 
+					// מיון מערך הפרחים לפי העומק המחושב ליצירת פרספקטיבה תלת-ממדית נכונה בעת הציור
 					allFlowers.sort((a, b) => a.zIndex - b.zIndex);
 
+					// פתיחת מחרוזת לבניית שכבת גרפיקה וקטורית מסוג SVG (עבור גבעולים ועלים) הממוקמת מעל הקנבס
 					var svgHtml = `<svg id="bouquetSvgLayer" style="position: absolute; top: 0; left: 0; width: 600px; height: 600px; z-index: 50; pointer-events: none;">`;
 
+					// שלב 1: ציור גבעולי הבסיס התחתונים (החלק שבולט ונשאר גלוי מתחת לסרט הקשירה)
 					for(var i = 0; i < 35; i++) {
 						var bAngleDeg = (Math.random() * 24) - 12;
 						var bAngleRad = bAngleDeg * Math.PI / 180;
@@ -276,6 +302,7 @@
 						svgHtml += `<line x1="${ribbonX}" y1="${ribbonY - 10}" x2="${bEndX}" y2="${bEndY}" stroke="${bColor}" stroke-width="${bWidth}" stroke-linecap="round" filter="drop-shadow(1px 2px 2px rgba(0,0,0,0.3))" />`;
 					}
 
+					// שלב 2: יצירה ופיזור של עלי רקע ירוקים מסביב ובתוך הזר במראה מרופד טבעי ועשיר
 					var numLeaves = 30 + allFlowers.length * 2;
 					for(var i = 0; i < numLeaves; i++) {
 						var lAngleDeg = (Math.random() * 160) - 80;
@@ -285,31 +312,36 @@
 						var lEndY = ribbonY - Math.cos(lAngleRad) * lLength;
 						var lColor = ['#2b4a1f', '#3a5a2b', '#486e35'][Math.floor(Math.random()*3)];
 						svgHtml += `<line x1="${ribbonX}" y1="${ribbonY}" x2="${lEndX}" y2="${lEndY}" stroke="${lColor}" stroke-width="2" opacity="0.6" />`;
-						var leafPath = "M 0 0 C -15 -20 -15 -45 0 -60 C 15 -45 15 -20 0 0";
+						var leafPath = "M 0 0 C -15 -20 -15 -45 0 -60 C 15 -45 15 -20 0 0"; // הגדרת מסלול וקטורי בצורת עלה
 						var scale = 0.5 + Math.random() * 0.5;
 						svgHtml += `<path d="${leafPath}" fill="${lColor}" transform="translate(${lEndX}, ${lEndY}) rotate(${lAngleDeg}) scale(${scale})" filter="drop-shadow(1px 2px 3px rgba(0,0,0,0.4))" />`;
 					}
 
+					// שלב 3: ציור גבעולים מפותלים המחברים בין בסיס הסרט לבין המיקום המדויק של כל ראש פרח שנבחר
+					// הגבעולים מצוירים באמצעות עקומות בזייה ריבועיות (Q - Quadratic Bezier Curves) למראה קשתי וריאליסטי
 					allFlowers.forEach(function(f) {
-						var controlX = ribbonX + (f.x - ribbonX) * 0.3;
-						var controlY = ribbonY - (ribbonY - f.y) * 0.4;
+						var controlX = ribbonX + (f.x - ribbonX) * 0.3; // נקודת בקרה אופקית לעקומה
+						var controlY = ribbonY - (ribbonY - f.y) * 0.4; // נקודת בקרה אנכית לעקומה
 						var stemWidth = 6 + Math.random() * 2;
 						var stemColor = ['#527a48', '#618a55', '#456b3d'][Math.floor(Math.random()*3)];
 						svgHtml += `<path d="M ${f.x} ${f.y} Q ${controlX} ${controlY} ${ribbonX} ${ribbonY}" fill="none" stroke="${stemColor}" stroke-width="${stemWidth}" stroke-linecap="round" filter="drop-shadow(2px 2px 4px rgba(0,0,0,0.4))" />`;
 					});
 
 					svgHtml += `</svg>`;
-					canvas.append(svgHtml);
+					canvas.append(svgHtml); // הזרקה של אלמנט ה-SVG שנוצר אל תוך קנבס הציור הראשי
 
+					// שלב 4: הזרקת אלמנט הסרט המעוצב (Ribbon) שמכסה את נקודת המפגש של כל גבעולי הזר
 					var ribbonHtml = `
 						<div class="bouquet-base" style="position: absolute; top: ${ribbonY - 15}px; left: 300px; transform: translateX(-50%); z-index: 200; width: 55px; height: 35px; background: repeating-linear-gradient(to bottom, #bd9f75, #bd9f75 3px, #a3855e 3px, #a3855e 6px); border-radius: 6px; box-shadow: inset 0 0 15px rgba(0,0,0,0.6), 0 5px 10px rgba(0,0,0,0.4);">
 						</div>`;
 					canvas.append(ribbonHtml);
 
+					// שלב 5: הדבקה ורינדור של ראשי הפרחים עצמם (תמונות ה-PNG) במיקומם הסופי, מעל שכבת הגבעולים והסרט
 					allFlowers.forEach(function (flower) {
 						var headSize = 75 + (Math.random() * 10);
-						var naturalRotation = flower.angle + (Math.random() * 20 - 10);
+						var naturalRotation = flower.angle + (Math.random() * 20 - 10); // הטיה קלה אקראית למראה אותנטי
 
+						// הגדרת מאפייני הסטייל של התמונה כולל מיקום מוחלט, הטיית סיבוב ופילטר CSS מסוג hue-rotate לעדכון הצבע
 						var headStyle = `
 							position: absolute;
 							width: ${headSize}px;
@@ -322,14 +354,16 @@
 							filter: drop-shadow(3px 6px 10px rgba(0,0,0,0.5)) hue-rotate(${flower.hue}deg);
 							pointer-events: none;`;
 
+						// נרמול וניקוי נתיבי קובץ התמונה על מנת למנוע כפילויות של סימני סלאש (//)
 						let imgSrc = flower.img || '';
 						imgSrc = imgSrc.replace('/images//images/', '/images/').replace('//', '/');
 						if (!imgSrc.startsWith('/')) imgSrc = '/' + imgSrc;
 
+						// השורה שמזריקה בפועל את אלמנט ה-img של הפרח לתוך ה-DOM של הלוח
 						canvas.append(`<img src="${imgSrc}" class="flower-instance" style="${headStyle}">`);
 					});
 				} else {
-					placeholder.show();
+					placeholder.show(); // החזרת הודעת ההדרכה הריקה למסך במידה ואין אף פרח בזר
 				}
 			}
 		});

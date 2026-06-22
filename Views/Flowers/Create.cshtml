@@ -1,5 +1,9 @@
 ﻿@model LyaShop.Models.Flower
 
+@{
+    ViewData["Title"] = "הוספת פרח חדש - FloraLya";
+}
+
 <div class="container mt-5" dir="rtl">
     <div class="row justify-content-center">
         <div class="col-md-8">
@@ -62,23 +66,35 @@
 </div>
 
 <script>
+    // מאזין לאירוע שינוי קובץ (כאשר המשתמש בוחר תמונה מהמחשב)
     document.getElementById('imageInput').onchange = function (evt) {
-        const [file] = this.files;
+        const [file] = this.files; // שליפת הקובץ הראשון שנבחר מהרשימה
         if (file) {
             const preview = document.getElementById('imgPreview');
+
+            // יצירת כתובת URL זמנית מקומית בדפדפן המצביעה על הקובץ שהועלה
             preview.src = URL.createObjectURL(file);
+
+            // הצגת אלמנט התמונה והסתרת אייקון המצלמה של ברירת המחדל
             preview.style.display = 'block';
             document.getElementById('placeholderIcon').style.display = 'none';
         }
     };
 
+    // שליפת אלמנטים מה-DOM עבור לוגיקת שינוי הגוון (Hue Rotation)
     const slider = document.getElementById('hueSlider');
     const previewImg = document.getElementById('imgPreview');
     const hueDisplay = document.getElementById('hueValue');
 
+    // האזנה לאירוע הגרירה של הסליידר (אירוע 'input' מופעל בזמן אמת תוך כדי הזזה)
     slider.addEventListener('input', function() {
-        const val = this.value;
+        const val = this.value; // מקבל את הערך הנוכחי שבין 0 ל-360
+
+        // החלת פילטר CSS מסוג hue-rotate על תמונת התצוגה המקדימה
+        // פילטר זה מסובב את גלגל הצבעים של התמונה בהתאם למעלות שנבחרו
         previewImg.style.filter = `hue-rotate(${val}deg)`;
+
+        // עדכון הטקסט המציג למשתמש את מספר המעלות הנוכחי
         hueDisplay.innerText = val + '°';
     });
 </script>
