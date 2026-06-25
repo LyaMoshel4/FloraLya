@@ -177,7 +177,9 @@
 					var shippingModal = new bootstrap.Modal(document.getElementById('shippingDetailsModal'));
 					shippingModal.show();
 				} else {
-					// אם לא מחובר - פותח מודל המפנה לדף התחברות ומזכיר להתחבר
+					// תיקון: אם המשתמש לא מחובר - פותח כעת את מודל תזכורת ההתחברות לחשבון
+					var loginModal = new bootstrap.Modal(document.getElementById('loginReminderModal'));
+					loginModal.show();
 				}
 			});
 
@@ -318,7 +320,6 @@
 					}
 
 					// שלב 3: ציור גבעולים מפותלים המחברים בין בסיס הסרט לבין המיקום המדויק של כל ראש פרח שנבחר
-					// הגבעולים מצוירים באמצעות עקומות בזייה ריבועיות (Q - Quadratic Bezier Curves) למראה קשתי וריאליסטי
 					allFlowers.forEach(function(f) {
 						var controlX = ribbonX + (f.x - ribbonX) * 0.3; // נקודת בקרה אופקית לעקומה
 						var controlY = ribbonY - (ribbonY - f.y) * 0.4; // נקודת בקרה אנכית לעקומה
@@ -341,7 +342,6 @@
 						var headSize = 75 + (Math.random() * 10);
 						var naturalRotation = flower.angle + (Math.random() * 20 - 10); // הטיה קלה אקראית למראה אותנטי
 
-						// הגדרת מאפייני הסטייל של התמונה כולל מיקום מוחלט, הטיית סיבוב ופילטר CSS מסוג hue-rotate לעדכון הצבע
 						var headStyle = `
 							position: absolute;
 							width: ${headSize}px;
@@ -354,12 +354,10 @@
 							filter: drop-shadow(3px 6px 10px rgba(0,0,0,0.5)) hue-rotate(${flower.hue}deg);
 							pointer-events: none;`;
 
-						// נרמול וניקוי נתיבי קובץ התמונה על מנת למנוע כפילויות של סימני סלאש (//)
 						let imgSrc = flower.img || '';
 						imgSrc = imgSrc.replace('/images//images/', '/images/').replace('//', '/');
 						if (!imgSrc.startsWith('/')) imgSrc = '/' + imgSrc;
 
-						// השורה שמזריקה בפועל את אלמנט ה-img של הפרח לתוך ה-DOM של הלוח
 						canvas.append(`<img src="${imgSrc}" class="flower-instance" style="${headStyle}">`);
 					});
 				} else {
